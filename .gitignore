@@ -218,3 +218,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Colcon workspace artifacts
+/install/
+/log/
+
+# Local TurtleBot3 SSH target. Copy config/robot.env.example to this path.
+/config/robot.env

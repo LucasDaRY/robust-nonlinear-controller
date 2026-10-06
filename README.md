@@ -1,1 +1,96 @@
 # robust-nonlinear-controller
+
+Python ROS 2 Humble workspace for a TurtleBot3 Burger. Nodes run on this laptop. The robot is on the local network. SSH is only used to start the robot.
+
+ROS 2 Humble is the `humble` micromamba environment. Activate the workspace with:
+
+```bash
+source scripts/enter.sh
+```
+
+That command activates Humble, sets the Burger defaults, and sources the colcon install space when it exists.
+
+## Defaults
+
+These values live in `config/workspace.env`. The robot must use the same ones.
+
+| Variable | Value | Role |
+| --- | --- | --- |
+| `TURTLEBOT3_MODEL` | `burger` | Selects the Burger description and simulation |
+| `ROS_DOMAIN_ID` | `30` | Isolates this robot from other ROS 2 graphs |
+| `RMW_IMPLEMENTATION` | `rmw_fastrtps_cpp` | Matches the default middleware on Ubuntu Humble |
+| `ROS_LOCALHOST_ONLY` | `0` | Allows discovery on the local network |
+
+NumPy and Matplotlib were already in the Humble environment. SciPy is installed there as well.
+
+## Build
+
+```bash
+scripts/build_workspace.sh
+source scripts/enter.sh
+```
+
+Run the build again after you edit a Python file. The install step copies the package into `install/`.
+
+## Publisher and subscriber
+
+The `rnc_demo` package publishes and subscribes to `std_msgs/String` on the `chatter` topic.
+
+```bash
+source scripts/enter.sh
+ros2 launch rnc_demo talker_listener.launch.py
+```
+
+Two separate terminals:
+
+```bash
+ros2 run rnc_demo talker
+ros2 run rnc_demo listener
+```
+
+## Simulation
+
+Gazebo Classic and `turtlebot3_gazebo` are installed in the Humble environment.
+
+```bash
+source scripts/enter.sh
+ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
+```
+
+In another terminal, after the same `source` command:
+
+```bash
+ros2 run turtlebot3_teleop teleop_keyboard
+```
+
+## Real robot
+
+Bringup runs on the robot. It talks to the motors and the sensors, and it subscribes to `/cmd_vel`.
+
+Teleop and later controllers run on this laptop. They publish `/cmd_vel`. The messages cross the local network. SSH is not required for that traffic.
+
+Both machines must use the same `ROS_DOMAIN_ID` and the same `RMW_IMPLEMENTATION`. If those differ, teleop works in an SSH session on the robot and stays silent on the laptop.
+
+1. Copy `config/robot.env.example` to `config/robot.env`.
+2. Set `ROBOT_HOST` to the robot IPv4 address.
+3. Connect with `scripts/robot_ssh.sh` when you need a shell on the robot.
+
+On the robot, source the Ubuntu Humble install and use the same domain, model, and middleware:
+
+```bash
+source /opt/ros/humble/setup.bash
+export TURTLEBOT3_MODEL=burger
+export ROS_DOMAIN_ID=30
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+ros2 launch turtlebot3_bringup robot.launch.py
+```
+
+Back on this laptop:
+
+```bash
+source scripts/enter.sh
+ros2 topic list
+ros2 run turtlebot3_teleop teleop_keyboard
+```
+
+`/scan`, `/odom`, and `/imu` should appear in `ros2 topic list` before you drive. Later controller nodes use those topics and `/cmd_vel`.
