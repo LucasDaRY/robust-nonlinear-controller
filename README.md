@@ -71,7 +71,7 @@ Teleop and later controllers run on this laptop. They publish `/cmd_vel`. The me
 
 Both machines must use the same `ROS_DOMAIN_ID` and the same `RMW_IMPLEMENTATION`.
 
-UDP from the robot does not reach this laptop, so discovery uses a TCP server on the robot, port `42100`. `scripts/enter.sh` points Fast DDS at that server. Start the server on the robot once after each boot:
+Discovery uses a TCP server on the robot, port `42100`, because UDP replies from the robot do not reach this laptop. `/cmd_vel` itself still travels over UDP, which is what the motor node reads. `scripts/enter.sh` writes that client profile. Start the server on the robot once after each boot:
 
 ```bash
 source /opt/ros/humble/setup.bash

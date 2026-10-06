@@ -28,8 +28,8 @@ micromamba activate humble
 # shellcheck disable=SC1091
 source "${_rnc_root}/config/workspace.env"
 
-# UDP from the robot does not reach this laptop. Both sides join a TCP
-# discovery server that listens on the robot.
+# Discovery uses the TCP server on the robot. UDP stays enabled so /cmd_vel
+# still reaches the motor node.
 _rnc_robot_host=""
 if [[ -f "${_rnc_root}/config/robot.env" ]]; then
   # shellcheck disable=SC1091
@@ -52,7 +52,7 @@ if [[ -n "${_rnc_robot_host}" ]]; then
       <userTransports>
         <transport_id>tcp_client</transport_id>
       </userTransports>
-      <useBuiltinTransports>false</useBuiltinTransports>
+      <useBuiltinTransports>true</useBuiltinTransports>
       <builtin>
         <discovery_config>
           <discoveryProtocol>SUPER_CLIENT</discoveryProtocol>
