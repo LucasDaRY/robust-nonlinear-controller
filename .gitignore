@@ -225,3 +225,6 @@ __marimo__/
 
 # Local TurtleBot3 SSH target. Copy config/robot.env.example to this path.
 /config/robot.env
+
+# Generated Fast DDS client profile for the robot discovery server.
+/config/fastdds.local.xml

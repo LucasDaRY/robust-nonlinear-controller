@@ -69,7 +69,22 @@ Bringup runs on the robot. It talks to the motors and the sensors, and it subscr
 
 Teleop and later controllers run on this laptop. They publish `/cmd_vel`. The messages cross the local network. SSH is not required for that traffic.
 
-Both machines must use the same `ROS_DOMAIN_ID` and the same `RMW_IMPLEMENTATION`. If those differ, teleop works in an SSH session on the robot and stays silent on the laptop.
+Both machines must use the same `ROS_DOMAIN_ID` and the same `RMW_IMPLEMENTATION`.
+
+UDP from the robot does not reach this laptop, so discovery uses a TCP server on the robot, port `42100`. `scripts/enter.sh` points Fast DDS at that server. Start the server on the robot once after each boot:
+
+```bash
+source /opt/ros/humble/setup.bash
+export ROS_DOMAIN_ID=30
+fastdds discovery -i 0 -t 0.0.0.0 -q 42100
+```
+
+Bringup and teleop on the robot must use the same client profile, `~/rnc/fastdds_client.xml`, via `FASTRTPS_DEFAULT_PROFILES_FILE`. Restart bringup after setting that variable. Then, on this laptop:
+
+```bash
+source scripts/enter.sh
+ros2 topic list
+```
 
 1. Copy `config/robot.env.example` to `config/robot.env`.
 2. Set `ROBOT_HOST` to the robot IPv4 address.
