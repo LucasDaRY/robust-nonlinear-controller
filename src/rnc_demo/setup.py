@@ -9,7 +9,14 @@ setup(
     data_files=[
         ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
         ("share/" + package_name, ["package.xml"]),
-        ("share/" + package_name + "/launch", ["launch/talker_listener.launch.py"]),
+        (
+            "share/" + package_name + "/launch",
+            [
+                "launch/talker_listener.launch.py",
+                "launch/table_world.launch.py",
+            ],
+        ),
+        ("share/" + package_name + "/worlds", ["worlds/table_1m.world"]),
     ],
     install_requires=["setuptools"],
     zip_safe=True,

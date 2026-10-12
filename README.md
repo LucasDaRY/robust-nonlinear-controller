@@ -50,18 +50,29 @@ ros2 run rnc_demo listener
 
 ## Simulation
 
-Gazebo Classic and `turtlebot3_gazebo` are installed in the Humble environment.
+The testing zone is `src/rnc_demo/worlds/table_1m.world`. It is a square table. The clear surface inside the rim is 1.00 m by 1.00 m, and the top face is 0.75 m above the floor. The Burger starts in the center.
+
+Run the simulation on domain 0. `scripts/enter.sh` joins the real robot on domain 30, and a shared domain would mix `/cmd_vel` with the Burger.
 
 ```bash
 source scripts/enter.sh
-ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
+export ROS_DOMAIN_ID=0 # To not control the real turtlebot
+unset FASTRTPS_DEFAULT_PROFILES_FILE
+ros2 daemon stop
+ros2 launch rnc_demo table_world.launch.py
 ```
 
-In another terminal, after the same `source` command:
+In another terminal:
 
 ```bash
+source scripts/enter.sh
+export ROS_DOMAIN_ID=0
+unset FASTRTPS_DEFAULT_PROFILES_FILE
+ros2 daemon stop
 ros2 run turtlebot3_teleop teleop_keyboard
 ```
+
+`x_pose`, `y_pose`, and `z_pose` change the spawn pose. The default `z_pose` is `0.76`, one centimetre above the table top.
 
 ## Real robot
 
