@@ -30,7 +30,10 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(
             os.path.join(gazebo_ros, "launch", "gzserver.launch.py")
         ),
-        launch_arguments={"world": world}.items(),
+        launch_arguments={
+            "world": world,
+            "extra_gazebo_args": "-s libgazebo_ros_factory.so",
+        }.items(),
     )
     gzclient_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
