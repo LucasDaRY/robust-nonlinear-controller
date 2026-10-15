@@ -17,6 +17,7 @@ setup(
             ],
         ),
         ("share/" + package_name + "/worlds", ["worlds/table_1m.world"]),
+        ("share/" + package_name + "/config", ["config/smc_params.yaml"]),
     ],
     install_requires=["setuptools"],
     zip_safe=True,
@@ -28,6 +29,9 @@ setup(
         "console_scripts": [
             "talker = rnc_demo.talker:main",
             "listener = rnc_demo.listener:main",
+            "odom_node = rnc_demo.odom_node:main",
+            "trajectory_node = rnc_demo.trajectory_node:main",
+            "smc_node = rnc_demo.smc_node:main",
         ],
     },
 )

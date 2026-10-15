@@ -1,0 +1,10 @@
+/**:
+  ros__parameters:
+    lambda_p: 1.0
+    lambda_i: 0.5
+    lambda_d: 0.000001
+    k: 0.02
+    a: 0.05
+    epsilon: 0.05
+    v_max: 0.15
+    w_max: 1.0
