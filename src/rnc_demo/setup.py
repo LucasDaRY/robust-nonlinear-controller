@@ -13,10 +13,10 @@ setup(
             "share/" + package_name + "/launch",
             [
                 "launch/talker_listener.launch.py",
-                "launch/table_world.launch.py",
+                "launch/simulation.launch.py",
             ],
         ),
-        ("share/" + package_name + "/worlds", ["worlds/table_1m.world"]),
+        ("share/" + package_name + "/worlds", ["worlds/empty_world.world"]),
         ("share/" + package_name + "/config", ["config/smc_params.yaml"]),
     ],
     install_requires=["setuptools"],

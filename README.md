@@ -50,7 +50,7 @@ ros2 run rnc_demo listener
 
 ## Simulation
 
-The testing zone is `src/rnc_demo/worlds/table_1m.world`. It is a square table. The clear surface inside the rim is 1.00 m by 1.00 m, and the top face is 0.75 m above the floor. The Burger starts in the center.
+The testing zone is `src/rnc_demo/worlds/embty_world.world`. It is an empty world. The Burger starts in the center.
 
 Run the simulation on domain 0. `scripts/enter.sh` joins the real robot on domain 30, and a shared domain would mix `/cmd_vel` with the Burger.
 
@@ -59,7 +59,7 @@ source scripts/enter.sh
 export ROS_DOMAIN_ID=0 # To not control the real turtlebot
 unset FASTRTPS_DEFAULT_PROFILES_FILE
 ros2 daemon stop
-ros2 launch rnc_demo table_world.launch.py
+ros2 launch rnc_demo simulation.launch.py
 ```
 
 In another terminal:
@@ -72,7 +72,7 @@ ros2 daemon stop
 ros2 run turtlebot3_teleop teleop_keyboard
 ```
 
-`x_pose`, `y_pose`, and `z_pose` change the spawn pose. The default `z_pose` is `0.76`, one centimetre above the table top.
+`x_pose`, `y_pose`, and `z_pose` change the spawn pose. The default `z_pose` is `0.01`, one centimetre above the floor.
 
 ## Real robot
 
