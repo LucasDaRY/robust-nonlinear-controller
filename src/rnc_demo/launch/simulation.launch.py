@@ -17,7 +17,7 @@ def generate_launch_description():
     urdf_path = os.path.join(
         turtlebot3_gazebo, "models", f"turtlebot3_{model}", "model.sdf"
     )
-    world = os.path.join(rnc_demo, "worlds", "table_1m.world")
+    world = os.path.join(turtlebot3_gazebo, "worlds", "empty_world.world")    
     smc_config = os.path.join(rnc_demo, "config", "smc_params.yaml")
 
     use_sim_time = LaunchConfiguration("use_sim_time")
@@ -90,7 +90,7 @@ def generate_launch_description():
         output="screen",
     )
 
-    # Lancement de la boucle de contrôle à 13s (quand le robot est posé sur la table)
+    # Lancement de la boucle de contrôle à 13s (quand le robot est posé sur le sol)
     delayed_nodes_cmd = TimerAction(
         period=13.0,
         actions=[odom_node, trajectory_node, smc_node]
@@ -102,7 +102,7 @@ def generate_launch_description():
             DeclareLaunchArgument("use_sim_time", default_value="true", description="Use Gazebo clock"),
             DeclareLaunchArgument("x_pose", default_value="0.0", description="Burger spawn position on x"),
             DeclareLaunchArgument("y_pose", default_value="0.0", description="Burger spawn position on y"),
-            DeclareLaunchArgument("z_pose", default_value="0.76", description="Burger spawn height"),
+            DeclareLaunchArgument("z_pose", default_value="0.01", description="Burger spawn height"),
             gzserver_cmd,
             gzclient_cmd,
             robot_state_publisher_cmd,
