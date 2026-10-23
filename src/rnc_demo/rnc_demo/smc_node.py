@@ -75,6 +75,21 @@ class SMCNode(Node):
         err_ddot = (err_dot - self.err_dot_prev) / dt
         self.err_int += err * dt
 
+        # # ----------------- Tolerance zone to stop -----------------
+        # # Desired speed
+        # v_des = np.hypot(self.hd_dot[0, 0], self.hd_dot[1, 0])
+        # # Distance error
+        # dist_err = np.hypot(err[0, 0], err[1, 0])
+        
+        # # If desired speed low and robot less than 3 cm away, stop
+        # if v_des < 0.001 and dist_err < 0.03:
+        #     twist = Twist()
+        #     twist.linear.x = 0.0
+        #     twist.angular.z = 0.0
+        #     self.pub_cmd.publish(twist)
+        #     return
+        # # ----------------------------------------------------------
+
         # Surface glissante s = lambda_p * err + lambda_i * int(err) + lambda_d * err_dot
         s = lambda_p * err + lambda_i * self.err_int + lambda_d * err_dot
 

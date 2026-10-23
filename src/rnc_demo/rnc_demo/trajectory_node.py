@@ -6,64 +6,92 @@ from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped
 import math
 import time
+import sympy as sp
 
 class TrajectoryNode(Node):
     def __init__(self):
         super().__init__('trajectory_node')
         
-        # Pour le contrôleur SMC
+        # Crontrol
         self.pub_cmd = self.create_publisher(Float64MultiArray, '/desired_trajectory', 10)
         
-        # Pour dessiner la courbe dans RViz
+        # Draw
         self.pub_path = self.create_publisher(Path, '/desired_path', 10)
         
-        self.timer_cmd = self.create_timer(0.05, self.timer_cb) # 20 Hz pour le contrôle
-        self.timer_path = self.create_timer(1.0, self.publish_path) # 1 Hz pour le dessin statique
+        self.timer_cmd = self.create_timer(0.05, self.timer_cb) # 20 Hz control
+        self.timer_path = self.create_timer(1.0, self.publish_path) # 1 Hz draw
         
-        self.t0 = time.time()
+        self.t0 = None
 
-    # J'ai isolé l'équation de la position ici pour que vous 
-    # puissiez la changer facilement à un seul endroit !
-    def get_desired_pose(self, t):
-        x = 0.5 * math.cos(t / 10.0) + 0.5
-        y = 0.5 * math.sin(t / 10.0) + 0.5
-        return x, y
+        # Trajectory Parameters
+        self.omega = 0.1  # Main pulsation
+        self.t_max = 2.0 * math.pi / self.omega  # Loop duration
+        t_sym = sp.Symbol('t')
+
+        # Parametric curve definition
+        x_sym = 0.5 * sp.cos(self.omega * t_sym) - 0.7  # Offset to start 
+        y_sym = 0.5 * sp.sin(2 * self.omega * t_sym)
+
+        # Automatic derivatives
+        x_dot_sym = sp.diff(x_sym, t_sym)
+        y_dot_sym = sp.diff(y_sym, t_sym)
+        x_ddot_sym = sp.diff(x_dot_sym, t_sym)
+        y_ddot_sym = sp.diff(y_dot_sym, t_sym)
+
+        # Convert to function
+        self.get_x = sp.lambdify(t_sym, x_sym, 'math')
+        self.get_y = sp.lambdify(t_sym, y_sym, 'math')
+        self.get_dx = sp.lambdify(t_sym, x_dot_sym, 'math')
+        self.get_dy = sp.lambdify(t_sym, y_dot_sym, 'math')
+        self.get_ddx = sp.lambdify(t_sym, x_ddot_sym, 'math')
+        self.get_ddy = sp.lambdify(t_sym, y_ddot_sym, 'math')
 
     def publish_path(self):
-        """ Échantillonne l'équation paramétrique pour dessiner le futur de la trajectoire """
         path_msg = Path()
-        path_msg.header.frame_id = "odom" # Le repère fixe du monde
+        path_msg.header.frame_id = "odom"
         path_msg.header.stamp = self.get_clock().now().to_msg()
         
-        # On va calculer la courbe sur 100 secondes (t_sim de 0 à 100)
-        # pour dessiner la ligne complète sur le sol
-        for i in range(200):
-            t_sim = i * 0.5  # Un point toutes les 0.5 secondes
-            x, y = self.get_desired_pose(t_sim)
-            
+        for i in range(1000):
+            t_sim = i * 0.5 # second per point
+            # Automatic stop
+            if t_sim > self.t_max:
+                break
+
             pose = PoseStamped()
             pose.header.frame_id = "odom"
             pose.header.stamp = path_msg.header.stamp
-            pose.pose.position.x = x
-            pose.pose.position.y = y
-            pose.pose.position.z = 0.0 # Posé sur le sol
-            
+            pose.pose.position.x = self.get_x(t_sim)
+            pose.pose.position.y = self.get_y(t_sim)
+            pose.pose.position.z = 0.0
+
             path_msg.poses.append(pose)
             
         self.pub_path.publish(path_msg)
 
     def timer_cb(self):
-        t = time.time() - self.t0
+        current_time = self.get_clock().now().nanoseconds / 1e9
+
+        if current_time <= 0.0:
+            return
+
+        if self.t0 is None:
+            self.t0 = current_time
+            self.get_logger().info("Starting.")
+
+        t = current_time - self.t0
+
+        # After one loop, stop the trajectory
+        if t >= self.t_max:
+            t = self.t_max
+            x_d, y_d = self.get_x(t), self.get_y(t)
+            x_d_dot, y_d_dot = 0.0, 0.0
+            x_d_ddot, y_d_ddot = 0.0, 0.0
         
-        # Position désirée à l'instant t
-        x_d, y_d = self.get_desired_pose(t)
-        
-        # TODO: Mettre à jour les dérivées ici 
-        x_d_dot = -0.05 * math.sin(t / 10.0)
-        y_d_dot = 0.05 * math.cos(t / 10.0)
-        
-        x_d_ddot = -0.005 * math.cos(t / 10.0)
-        y_d_ddot = -0.005 * math.sin(t / 10.0)
+        # Else continue normal trajectory
+        else:
+            x_d, y_d = self.get_x(t), self.get_y(t)
+            x_d_dot, y_d_dot = self.get_dx(t), self.get_dy(t)
+            x_d_ddot, y_d_ddot = self.get_ddx(t), self.get_ddy(t)
 
         msg = Float64MultiArray()
         msg.data = [x_d, y_d, x_d_dot, y_d_dot, x_d_ddot, y_d_ddot]
