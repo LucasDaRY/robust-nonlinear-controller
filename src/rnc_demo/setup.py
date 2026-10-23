@@ -17,6 +17,7 @@ setup(
                 "launch/talker_listener.launch.py",
                 "launch/simulation.launch.py",
                 "launch/drawn_trajectory_simulation.launch.py",
+                "launch/real_robot.launch.py",
             ],
         ),
         ("share/" + package_name + "/worlds", ["worlds/empty_world.world"]),
