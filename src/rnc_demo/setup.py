@@ -1,3 +1,5 @@
+import os
+from glob import glob
 from setuptools import find_packages, setup
 
 package_name = "rnc_demo"
@@ -14,10 +16,12 @@ setup(
             [
                 "launch/talker_listener.launch.py",
                 "launch/simulation.launch.py",
+                "launch/drawn_trajectory_simulation.launch.py",
             ],
         ),
         ("share/" + package_name + "/worlds", ["worlds/empty_world.world"]),
         ("share/" + package_name + "/config", ["config/smc_params.yaml"]),
+        ("share/" + package_name + "/rviz", ["rviz/trajectory.rviz"]),
     ],
     install_requires=["setuptools"],
     zip_safe=True,

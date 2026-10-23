@@ -19,7 +19,6 @@ def generate_launch_description():
     
     world = os.path.join(turtlebot3_gazebo, "worlds", "empty_world.world")
     smc_config = os.path.join(rnc_demo, "config", "smc_params.yaml")
-    
     rviz_config_path = os.path.join(rnc_demo, "rviz", "trajectory.rviz")
 
     use_sim_time = LaunchConfiguration("use_sim_time")
@@ -29,7 +28,7 @@ def generate_launch_description():
 
     set_env_gazebo = SetEnvironmentVariable("GAZEBO_MODEL_DATABASE_URI", "")
 
-    # GAZEBO EN HEADLESS
+    # 1. GAZEBO EN HEADLESS
     gzserver_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(gazebo_ros, "launch", "gzserver.launch.py")
@@ -40,16 +39,6 @@ def generate_launch_description():
         }.items(),
     )
 
-    # LANCEMENT DE RVIZ2
-    rviz2_cmd = Node(
-        package='rviz2',
-        executable='rviz2',
-        name='rviz2',
-        arguments=['-d', rviz_config_path],
-        parameters=[{'use_sim_time': use_sim_time}],
-        output='screen'
-    )
-
     robot_state_publisher_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(turtlebot3_gazebo, "launch", "robot_state_publisher.launch.py")
@@ -57,6 +46,7 @@ def generate_launch_description():
         launch_arguments={"use_sim_time": use_sim_time}.items(),
     )
 
+    # 2. DÉFINITION DU SPAWN DE L'ENTITÉ
     spawn_cmd = Node(
         package="gazebo_ros",
         executable="spawn_entity.py",
@@ -66,9 +56,20 @@ def generate_launch_description():
         ],
         output="screen",
     )
-
     delayed_spawn_cmd = TimerAction(period=10.0, actions=[spawn_cmd])
 
+    # 3. DÉFINITION DE RVIZ2
+    rviz2_cmd = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        arguments=['-d', rviz_config_path],
+        parameters=[{'use_sim_time': use_sim_time}],
+        output='screen'
+    )
+    delayed_rviz_cmd = TimerAction(period=11.0, actions=[rviz2_cmd])
+
+    # 4. DÉFINITION DES NŒUDS DE CONTRÔLE
     odom_node = Node(package="rnc_demo", executable="odom_node", output="screen")
     trajectory_node = Node(package="rnc_demo", executable="trajectory_node", output="screen")
     smc_node = Node(package="rnc_demo", executable="smc_node", parameters=[smc_config], output="screen")
@@ -87,8 +88,8 @@ def generate_launch_description():
             DeclareLaunchArgument("z_pose", default_value="0.01"),
             gzserver_cmd,
             robot_state_publisher_cmd,
-            rviz2_cmd,
             delayed_spawn_cmd,
+            delayed_rviz_cmd,
             delayed_nodes_cmd,
         ]
     )
