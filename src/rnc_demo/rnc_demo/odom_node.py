@@ -8,9 +8,9 @@ import math
 class OdomNode(Node):
     def __init__(self):
         super().__init__('odom_node')
-        # Souscription au topic d'odométrie de Gazebo/TurtleBot
+        # Subscription to Gazebo/TurtleBot odometry topic
         self.sub = self.create_subscription(Odometry, '/odom', self.odom_cb, 10)
-        # Publication de la position simplifiée
+        # Publish simplified position
         self.pub = self.create_publisher(Pose2D, '/robot_pose', 10)
 
     def odom_cb(self, msg):
@@ -18,7 +18,7 @@ class OdomNode(Node):
         pose.x = msg.pose.pose.position.x
         pose.y = msg.pose.pose.position.y
         
-        # Conversion du quaternion en angle de lacet (yaw)
+        # Convert quaternion to yaw angle
         q = msg.pose.pose.orientation
         siny_cosp = 2.0 * (q.w * q.z + q.x * q.y)
         cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)

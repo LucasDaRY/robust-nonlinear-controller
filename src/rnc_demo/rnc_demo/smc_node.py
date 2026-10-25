@@ -10,7 +10,7 @@ class SMCNode(Node):
     def __init__(self):
         super().__init__('smc_node')
         
-        # Déclaration des paramètres configurables via le fichier YAML
+        # Declaration of configurable parameters via YAML file
         self.declare_parameter('lambda_p', 1.0)
         self.declare_parameter('lambda_i', 0.5)
         self.declare_parameter('lambda_d', 0.000001)
@@ -20,7 +20,7 @@ class SMCNode(Node):
         self.declare_parameter('v_max', 0.15)
         self.declare_parameter('w_max', 1.0)
 
-        # Abonnements et Éditeur
+        # Subscribers and Publisher
         self.sub_pose = self.create_subscription(Pose2D, '/robot_pose', self.pose_cb, 10)
         self.sub_traj = self.create_subscription(Float64MultiArray, '/desired_trajectory', self.traj_cb, 10)
         self.pub_cmd = self.create_publisher(Twist, '/cmd_vel', 10)
@@ -34,13 +34,13 @@ class SMCNode(Node):
 
         self.is_finished = False
 
-        # Mémoires pour intégration et dérivation
+        # Memory for integration and differentiation
         self.err_int = np.zeros((2, 1))
         self.err_prev = np.zeros((2, 1))
         self.err_dot_prev = np.zeros((2, 1))
 
         self.last_time = self.get_clock().now()
-        self.timer = self.create_timer(0.05, self.control_loop) # Boucle à 20 Hz
+        self.timer = self.create_timer(0.05, self.control_loop) # 20 Hz control loop
 
         # CSV parameters (to save desired and real trajectory)
         self.csv_path = os.path.expanduser('~/robust_nonlinear_controller/trajectory_data.csv')
@@ -80,7 +80,7 @@ class SMCNode(Node):
             self.pub_cmd.publish(twist)
             return
 
-        # Récupération dynamique des paramètres déclarés dans le YAML
+        # Dynamic retrieval of parameters declared in YAML
         lambda_p = self.get_parameter('lambda_p').value
         lambda_i = self.get_parameter('lambda_i').value
         lambda_d = self.get_parameter('lambda_d').value
@@ -90,36 +90,36 @@ class SMCNode(Node):
         v_max = self.get_parameter('v_max').value
         w_max = self.get_parameter('w_max').value
 
-        # Calculs des erreurs de suivi
+        # Tracking error calculations
         err = self.hd - self.h
         err_dot = (err - self.err_prev) / dt
         err_ddot = (err_dot - self.err_dot_prev) / dt
         self.err_int += err * dt
 
-        # Surface glissante s = lambda_p * err + lambda_i * int(err) + lambda_d * err_dot
+        # Sliding surface s = lambda_p * err + lambda_i * int(err) + lambda_d * err_dot
         s = lambda_p * err + lambda_i * self.err_int + lambda_d * err_dot
 
-        # Matrice Jacobienne inverse
+        # Inverse Jacobian matrix
         J_inv = np.array([
             [np.cos(self.psi), np.sin(self.psi)],
             [-np.sin(self.psi) / a, np.cos(self.psi) / a]
         ])
 
-        # Partie continue ua = J^-1 * [ hd_dot + (lambda_i/lambda_p)*err + (lambda_d/lambda_p)*err_ddot ]
+        # Continuous part ua = J^-1 * [ hd_dot + (lambda_i/lambda_p)*err + (lambda_d/lambda_p)*err_ddot ]
         term_ua = self.hd_dot + (lambda_i / lambda_p) * err + (lambda_d / lambda_p) * err_ddot
         ua = J_inv @ term_ua
 
-        # Partie discontinue adoucie ud = J^-1 * k * tanh(s / epsilon)
+        # Smoothed discontinuous part ud = J^-1 * k * tanh(s / epsilon)
         ud = J_inv @ (k * np.tanh(s / epsilon))
 
-        # Commande totale U = ua + ud
+        # Total control U = ua + ud
         U = ua + ud
 
-        # Mémorisation pour le pas suivant
+        # Save for the next step
         self.err_prev = err
         self.err_dot_prev = err_dot
 
-        # Saturation aux limites de vitesse configurées
+        # Saturation at configured speed limits
         twist = Twist()
         twist.linear.x = float(np.clip(U[0, 0], -v_max, v_max))
         twist.angular.z = float(np.clip(U[1, 0], -w_max, w_max))
