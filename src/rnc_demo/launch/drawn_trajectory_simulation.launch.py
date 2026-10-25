@@ -49,7 +49,7 @@ def generate_launch_description():
         executable="spawn_entity.py",
         arguments=[
             "-entity", model, "-file", urdf_path,
-            "-x", "0.0", "-y", "0.0", "-z", "0.01", "-Y", "1.5708",
+            "-x", "0.0", "-y", "0.0", "-z", "0.01", "-Y", "0.0",
         ],
         output="screen",
     )
@@ -80,7 +80,7 @@ def generate_launch_description():
         [
             set_env_gazebo,
             DeclareLaunchArgument("use_sim_time", default_value="true"),
-            DeclareLaunchArgument("yaw_pose", default_value="1.5708"),
+            DeclareLaunchArgument("yaw_pose", default_value="0.0"),
             
             gzserver_cmd,
             robot_state_publisher_cmd,

@@ -8,7 +8,6 @@ def generate_launch_description():
     smc_config = os.path.join(rnc_demo, "config", "smc_params.yaml")
     rviz_config_path = os.path.join(rnc_demo, "rviz", "trajectory.rviz")
 
-    # Uniquement l'interface de visualisation
     rviz2_cmd = Node(
         package='rviz2',
         executable='rviz2',
@@ -17,7 +16,6 @@ def generate_launch_description():
         output='screen'
     )
 
-    # Vos noeuds de contrôle
     odom_node = Node(package="rnc_demo", executable="odom_node", output="screen")
     trajectory_node = Node(package="rnc_demo", executable="trajectory_node", output="screen")
     smc_node = Node(package="rnc_demo", executable="smc_node", parameters=[smc_config], output="screen")

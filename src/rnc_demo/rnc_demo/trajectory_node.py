@@ -33,8 +33,8 @@ class TrajectoryNode(Node):
         t_sym = sp.Symbol('t')
 
         # Parametric curve definition
-        x_sym = 0.5 * sp.cos(self.omega * t_sym) - 0.7  # Offset to start 
-        y_sym = 0.5 * sp.sin(2 * self.omega * t_sym)
+        x_sym = 0.5 * sp.sin(2.0 * self.omega * t_sym)
+        y_sym = 0.5 * sp.cos(self.omega * t_sym) - 0.7
 
         # Automatic derivatives
         x_dot_sym = sp.diff(x_sym, t_sym)
@@ -91,7 +91,6 @@ class TrajectoryNode(Node):
         if t >= self.t_max:
             t = self.t_max
             stop_flag = 1.0
-            self.get_logger().info("Trajectory ended.")
         else:
             stop_flag = 0.0
         
