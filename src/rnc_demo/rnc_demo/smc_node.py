@@ -4,6 +4,7 @@ from rclpy.node import Node
 from geometry_msgs.msg import Pose2D, Twist
 from std_msgs.msg import Float64MultiArray
 import numpy as np
+import os
 
 class SMCNode(Node):
     def __init__(self):
@@ -41,6 +42,11 @@ class SMCNode(Node):
         self.last_time = self.get_clock().now()
         self.timer = self.create_timer(0.05, self.control_loop) # Boucle à 20 Hz
 
+        # CSV parameters (to save desired and real trajectory)
+        self.csv_path = os.path.expanduser('~/robust_nonlinear_controller/trajectory_data.csv')
+        self.csv_file = open(self.csv_path, 'w')
+        self.csv_file.write("x_des,y_des,x_real,y_real\n")
+
     def pose_cb(self, msg):
         self.h[0, 0] = msg.x
         self.h[1, 0] = msg.y
@@ -61,6 +67,10 @@ class SMCNode(Node):
         if dt <= 0.0:
             return
         self.last_time = now
+
+        # Save to CSV
+        if not self.csv_file.closed and not self.is_finished:
+            self.csv_file.write(f"{self.hd[0,0]},{self.hd[1,0]},{self.h[0,0]},{self.h[1,0]}\n")
 
         # Stop after first lap
         if self.is_finished:

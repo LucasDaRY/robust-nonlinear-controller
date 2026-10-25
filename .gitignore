@@ -228,3 +228,7 @@ __marimo__/
 
 # Generated Fast DDS client profile for the robot discovery server.
 /config/fastdds.local.xml
+
+# Generated data
+trajectory_data.csv
+trajectory_result.png
