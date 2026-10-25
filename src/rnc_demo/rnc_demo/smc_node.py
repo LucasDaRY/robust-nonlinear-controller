@@ -24,12 +24,14 @@ class SMCNode(Node):
         self.sub_traj = self.create_subscription(Float64MultiArray, '/desired_trajectory', self.traj_cb, 10)
         self.pub_cmd = self.create_publisher(Twist, '/cmd_vel', 10)
 
-        # Variables d'état
+        # State variables
         self.h = np.zeros((2, 1))
         self.psi = 0.0
         self.hd = np.zeros((2, 1))
         self.hd_dot = np.zeros((2, 1))
         self.hd_ddot = np.zeros((2, 1))
+
+        self.is_finished = False
 
         # Mémoires pour intégration et dérivation
         self.err_int = np.zeros((2, 1))
@@ -51,6 +53,7 @@ class SMCNode(Node):
         self.hd_dot[1, 0] = msg.data[3]
         self.hd_ddot[0, 0] = msg.data[4]
         self.hd_ddot[1, 0] = msg.data[5]
+        self.is_finished = (msg.data[6] == 1.0)
 
     def control_loop(self):
         now = self.get_clock().now()
@@ -58,6 +61,14 @@ class SMCNode(Node):
         if dt <= 0.0:
             return
         self.last_time = now
+
+        # Stop after first lap
+        if self.is_finished:
+            twist = Twist()
+            twist.linear.x = 0.0
+            twist.angular.z = 0.0
+            self.pub_cmd.publish(twist)
+            return
 
         # Récupération dynamique des paramètres déclarés dans le YAML
         lambda_p = self.get_parameter('lambda_p').value
@@ -74,21 +85,6 @@ class SMCNode(Node):
         err_dot = (err - self.err_prev) / dt
         err_ddot = (err_dot - self.err_dot_prev) / dt
         self.err_int += err * dt
-
-        # # ----------------- Tolerance zone to stop -----------------
-        # # Desired speed
-        # v_des = np.hypot(self.hd_dot[0, 0], self.hd_dot[1, 0])
-        # # Distance error
-        # dist_err = np.hypot(err[0, 0], err[1, 0])
-        
-        # # If desired speed low and robot less than 3 cm away, stop
-        # if v_des < 0.001 and dist_err < 0.03:
-        #     twist = Twist()
-        #     twist.linear.x = 0.0
-        #     twist.angular.z = 0.0
-        #     self.pub_cmd.publish(twist)
-        #     return
-        # # ----------------------------------------------------------
 
         # Surface glissante s = lambda_p * err + lambda_i * int(err) + lambda_d * err_dot
         s = lambda_p * err + lambda_i * self.err_int + lambda_d * err_dot

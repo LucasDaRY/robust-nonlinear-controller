@@ -3,7 +3,7 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Float64MultiArray
 from nav_msgs.msg import Path
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Pose2D
 import math
 import time
 import sympy as sp
@@ -17,6 +17,10 @@ class TrajectoryNode(Node):
         
         # Draw
         self.pub_path = self.create_publisher(Path, '/desired_path', 10)
+
+        # Verify robot spawn
+        self.sub_pose = self.create_subscription(Pose2D, '/robot_pose', self.pose_cb, 10)
+        self.robot_ready = False
         
         self.timer_cmd = self.create_timer(0.05, self.timer_cb) # 20 Hz control
         self.timer_path = self.create_timer(1.0, self.publish_path) # 1 Hz draw
@@ -46,6 +50,9 @@ class TrajectoryNode(Node):
         self.get_ddx = sp.lambdify(t_sym, x_ddot_sym, 'math')
         self.get_ddy = sp.lambdify(t_sym, y_ddot_sym, 'math')
 
+    def pose_cb(self, msg):
+        self.robot_ready = True
+
     def publish_path(self):
         path_msg = Path()
         path_msg.header.frame_id = "odom"
@@ -71,30 +78,30 @@ class TrajectoryNode(Node):
     def timer_cb(self):
         current_time = self.get_clock().now().nanoseconds / 1e9
 
-        if current_time <= 0.0:
+        if current_time <= 0.0 or not self.robot_ready:
             return
 
         if self.t0 is None:
             self.t0 = current_time
-            self.get_logger().info("Starting.")
+            self.get_logger().info("Robot detected. Starting trajectory.")
 
         t = current_time - self.t0
 
         # After one loop, stop the trajectory
         if t >= self.t_max:
             t = self.t_max
-            x_d, y_d = self.get_x(t), self.get_y(t)
-            x_d_dot, y_d_dot = 0.0, 0.0
-            x_d_ddot, y_d_ddot = 0.0, 0.0
-        
-        # Else continue normal trajectory
+            stop_flag = 1.0
+            self.get_logger().info("Trajectory ended.")
         else:
-            x_d, y_d = self.get_x(t), self.get_y(t)
-            x_d_dot, y_d_dot = self.get_dx(t), self.get_dy(t)
-            x_d_ddot, y_d_ddot = self.get_ddx(t), self.get_ddy(t)
+            stop_flag = 0.0
+        
+        # Trajectory
+        x_d, y_d = self.get_x(t), self.get_y(t)
+        x_d_dot, y_d_dot = self.get_dx(t), self.get_dy(t)
+        x_d_ddot, y_d_ddot = self.get_ddx(t), self.get_ddy(t)
 
         msg = Float64MultiArray()
-        msg.data = [x_d, y_d, x_d_dot, y_d_dot, x_d_ddot, y_d_ddot]
+        msg.data = [x_d, y_d, x_d_dot, y_d_dot, x_d_ddot, y_d_ddot, stop_flag]
         self.pub_cmd.publish(msg)
 
 def main(args=None):
