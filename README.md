@@ -1,122 +1,70 @@
-# robust-nonlinear-controller
+# Robust Nonlinear Controller (SMC) for TurtleBot3
+This ROS 2 Humble package implements a **Sliding Mode Controller (SMC)** for a TurtleBot3 Burger. The robot tracks a dynamically generated parametric trajectory. It uses an Extended Kalman Filter (EKF) to fuse Odometry and IMU data, ensuring high-frequency state estimation and robustness against wheel slip.
 
-Python ROS 2 Humble workspace for a TurtleBot3 Burger. Nodes run on this laptop. The robot is on the local network. SSH is only used to start the robot.
+## Global Architecture
+The control loop is completely decoupled and relies on three custom ROS 2 nodes running simultaneously:
+1. **`trajectory_node`**: The parametric trajectory generator. It uses symbolic math (`sympy`) to compute the desired position, velocity, and acceleration at any given time $t$. It waits for the robot's first pose message before starting its timer to prevent desynchronization. It publishes on `/desired_trajectory`.
+2. **`odom_node`**: The state estimator bridge. It subscribes to the EKF output (`/odometry/filtered`), converts the 3D quaternion into a simple 2D Yaw angle, and publishes a clean `Pose2D` on `/robot_pose`.
+3. **`smc_node`**: The core controller. It subscribes to both `/robot_pose` and `/desired_trajectory`. It calculates the tracking errors, applies the Sliding Mode Control mathematical law, and publishes velocity commands to `/cmd_vel`. It also saves the live trajectory data to a CSV file for post-process plotting.
+---
 
-ROS 2 Humble is the `humble` micromamba environment. Activate the workspace with:
+## Prerequisites & Installation
 
+### Dependencies
+Install the ROS 2 EKF package and required Python libraries. *(Note: `numpy<2` is enforced to prevent compatibility issues with ROS 2's default matplotlib).*
 ```bash
-source scripts/enter.sh
+sudo apt install ros-humble-robot-localization
+pip install sympy pandas matplotlib "numpy<2"
 ```
 
-That command activates Humble, sets the Burger defaults, and sources the colcon install space when it exists.
-
-## Defaults
-
-These values live in `config/workspace.env`. The robot must use the same ones.
-
-| Variable | Value | Role |
-| --- | --- | --- |
-| `TURTLEBOT3_MODEL` | `burger` | Selects the Burger description and simulation |
-| `ROS_DOMAIN_ID` | `30` | Isolates this robot from other ROS 2 graphs |
-| `RMW_IMPLEMENTATION` | `rmw_fastrtps_cpp` | Matches the default middleware on Ubuntu Humble |
-| `ROS_LOCALHOST_ONLY` | `0` | Allows discovery on the local network |
-
-NumPy and Matplotlib were already in the Humble environment. SciPy is installed there as well.
-
-## Build
-
+### Build
+You can build the workspace using standard `colcon`:
 ```bash
-scripts/build_workspace.sh
-source scripts/enter.sh
+colcon build --symlink-install
 ```
+---
 
-Run the build again after you edit a Python file. The install step copies the package into `install/`.
-
-## Publisher and subscriber
-
-The `rnc_demo` package publishes and subscribes to `std_msgs/String` on the `chatter` topic.
-
+## Environment Variables
+We provide two specific scripts to quickly configure your DDS middleware, domain ID, and Gazebo paths depending on whether you are running a simulation or the physical robot.
+**For Simulation (Localhost, CycloneDDS, Domain 0):**
 ```bash
-source scripts/enter.sh
-ros2 launch rnc_demo talker_listener.launch.py
+source sim_vars.sh
 ```
-
-Two separate terminals:
-
+**For the Real Robot (Network enabled, FastRTPS, Domain 30):**
 ```bash
-ros2 run rnc_demo talker
-ros2 run rnc_demo listener
+source real_robot_vars.sh
 ```
+---
 
-## Simulation
-
-The testing zone is `src/rnc_demo/worlds/embty_world.world`. It is an empty world. The Burger starts in the center.
-
-Run the simulation on domain 0. `scripts/enter.sh` joins the real robot on domain 30, and a shared domain would mix `/cmd_vel` with the Burger.
-
+## Launch Files
+The project features three distinct launch files tailored for different use cases. All launch files automatically handle the required delays to ensure Gazebo and DDS are fully initialized before the control loop starts.
+### 1. `drawn_trajectory_simulation.launch.py` (Recommended for Dev)
+Runs a lightweight, headless Gazebo server in the background and opens **RViz2** for 3D visualization. It displays the robot, the TF frames, and draws the desired path in real-time.
 ```bash
-source scripts/enter.sh
-export ROS_DOMAIN_ID=0 # To not control the real turtlebot
-unset FASTRTPS_DEFAULT_PROFILES_FILE
-ros2 daemon stop
+ros2 launch rnc_demo drawn_trajectory_simulation.launch.py
+```
+### 2. `simulation.launch.py` (Full Physics GUI)
+Runs the full **Gazebo Client (GUI)**. Useful if you want to visually inspect the physical interactions, add obstacles, or check for wheel slip in the 3D world.
+```bash
 ros2 launch rnc_demo simulation.launch.py
 ```
-
-In another terminal:
-
+### 3. `real_robot.launch.py` (Physical Deployment)
+To be used when the physical TurtleBot3 is powered on and connected to the same Wi-Fi network. This file only launches RViz2 and the three control nodes. (Gazebo and spawn nodes are excluded).
 ```bash
-source scripts/enter.sh
-export ROS_DOMAIN_ID=0
-unset FASTRTPS_DEFAULT_PROFILES_FILE
-ros2 daemon stop
-ros2 run turtlebot3_teleop teleop_keyboard
+ros2 launch rnc_demo real_robot.launch.py
 ```
+---
 
-`x_pose`, `y_pose`, and `z_pose` change the spawn pose. The default `z_pose` is `0.01`, one centimetre above the floor.
+## Configuration
+Control tuning and sensor fusion parameters are exposed in YAML files inside the `config/` directory:
+* **`smc_params.yaml`**: Tune the SMC behavior.
+* **`ekf.yaml`**: Configures the Extended Kalman Filter.
+---
 
-## Real robot
-
-Bringup runs on the robot. It talks to the motors and the sensors, and it subscribes to `/cmd_vel`.
-
-Teleop and later controllers run on this laptop. They publish `/cmd_vel`. The messages cross the local network. SSH is not required for that traffic.
-
-Both machines must use the same `ROS_DOMAIN_ID` and the same `RMW_IMPLEMENTATION`.
-
-Discovery uses a TCP server on the robot, port `42100`, because UDP replies from the robot do not reach this laptop. `/cmd_vel` itself still travels over UDP, which is what the motor node reads. `scripts/enter.sh` writes that client profile. Start the server on the robot once after each boot:
-
+## Plotting Results
+During execution, `smc_node` continuously logs the desired and actual trajectories. Once the trajectory is complete, it safely closes `trajectory_data.csv`.
+To generate a high-quality Matplotlib graph for academic reporting and performance validation, run:
 ```bash
-source /opt/ros/humble/setup.bash
-export ROS_DOMAIN_ID=30
-fastdds discovery -i 0 -t 0.0.0.0 -q 42100
+python3 plot_trajectory.py
 ```
-
-Bringup and teleop on the robot must use the same client profile, `~/rnc/fastdds_client.xml`, via `FASTRTPS_DEFAULT_PROFILES_FILE`. Restart bringup after setting that variable. Then, on this laptop:
-
-```bash
-source scripts/enter.sh
-ros2 topic list
-```
-
-1. Copy `config/robot.env.example` to `config/robot.env`.
-2. Set `ROBOT_HOST` to the robot IPv4 address.
-3. Connect with `scripts/robot_ssh.sh` when you need a shell on the robot.
-
-On the robot, source the Ubuntu Humble install and use the same domain, model, and middleware:
-
-```bash
-source /opt/ros/humble/setup.bash
-export TURTLEBOT3_MODEL=burger
-export ROS_DOMAIN_ID=30
-export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
-ros2 launch turtlebot3_bringup robot.launch.py
-```
-
-Back on this laptop:
-
-```bash
-source scripts/enter.sh
-ros2 topic list
-ros2 run turtlebot3_teleop teleop_keyboard
-```
-
-`/scan`, `/odom`, and `/imu` should appear in `ros2 topic list` before you drive. Later controller nodes use those topics and `/cmd_vel`.
+This will display the plot and save it as `trajectory_result.png` in your workspace.
