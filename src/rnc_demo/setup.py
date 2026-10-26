@@ -21,6 +21,7 @@ setup(
             ],
         ),
         ("share/" + package_name + "/worlds", ["worlds/empty_world.world"]),
+        ("share/" + package_name + "/config", ["config/ekf.yaml"]),
         ("share/" + package_name + "/config", ["config/smc_params.yaml"]),
         ("share/" + package_name + "/rviz", ["rviz/trajectory.rviz"]),
     ],

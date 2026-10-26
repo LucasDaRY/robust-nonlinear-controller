@@ -16,8 +16,9 @@ def generate_launch_description():
     urdf_path = os.path.join(
         turtlebot3_gazebo, "models", f"turtlebot3_{model}", "model.sdf"
     )
-    world = os.path.join(turtlebot3_gazebo, "worlds", "empty_world.world")    
+    world = os.path.join(turtlebot3_gazebo, "worlds", "empty_world.world")
     smc_config = os.path.join(rnc_demo, "config", "smc_params.yaml")
+    ekf_config = os.path.join(rnc_demo, "config", "ekf.yaml")
 
     use_sim_time = LaunchConfiguration("use_sim_time")
     x_pose = LaunchConfiguration("x_pose")
@@ -59,7 +60,7 @@ def generate_launch_description():
             "-x", x_pose,
             "-y", y_pose,
             "-z", z_pose,
-            "-Y", yaw_pose, # Ajout de l'angle pour démarrer parallèle
+            "-Y", yaw_pose,
         ],
         output="screen",
     )
@@ -67,6 +68,14 @@ def generate_launch_description():
     delayed_spawn_cmd = TimerAction(
         period=5.0,
         actions=[spawn_cmd]
+    )
+    
+    ekf_node = Node(
+        package='robot_localization',
+        executable='ekf_node',
+        name='ekf_filter_node',
+        output='screen',
+        parameters=[ekf_config, {'use_sim_time': use_sim_time}]
     )
 
     odom_node = Node(package="rnc_demo", executable="odom_node", output="screen")
@@ -90,6 +99,7 @@ def generate_launch_description():
             gzclient_cmd,
             robot_state_publisher_cmd,
             delayed_spawn_cmd,
+            ekf_node,
             delayed_nodes_cmd,
         ]
     )

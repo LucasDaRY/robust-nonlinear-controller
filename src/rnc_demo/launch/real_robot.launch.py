@@ -6,6 +6,7 @@ from launch_ros.actions import Node
 def generate_launch_description():
     rnc_demo = get_package_share_directory("rnc_demo")
     smc_config = os.path.join(rnc_demo, "config", "smc_params.yaml")
+    ekf_config = os.path.join(rnc_demo, "config", "ekf.yaml")
     rviz_config_path = os.path.join(rnc_demo, "rviz", "trajectory.rviz")
 
     rviz2_cmd = Node(
@@ -16,12 +17,21 @@ def generate_launch_description():
         output='screen'
     )
 
+    ekf_node = Node(
+        package='robot_localization',
+        executable='ekf_node',
+        name='ekf_filter_node',
+        output='screen',
+        parameters=[ekf_config, {'use_sim_time': use_sim_time}]
+    )
+
     odom_node = Node(package="rnc_demo", executable="odom_node", output="screen")
     trajectory_node = Node(package="rnc_demo", executable="trajectory_node", output="screen")
     smc_node = Node(package="rnc_demo", executable="smc_node", parameters=[smc_config], output="screen")
 
     return LaunchDescription([
         rviz2_cmd,
+        ekf_node,
         odom_node,
         trajectory_node,
         smc_node,

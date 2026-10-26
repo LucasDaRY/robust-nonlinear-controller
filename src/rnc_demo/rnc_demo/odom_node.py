@@ -8,9 +8,10 @@ import math
 class OdomNode(Node):
     def __init__(self):
         super().__init__('odom_node')
-        # Subscription to Gazebo/TurtleBot odometry topic
-        self.sub = self.create_subscription(Odometry, '/odom', self.odom_cb, 10)
-        # Publish simplified position
+        
+        # EKF (odom + IMU)
+        self.sub = self.create_subscription(Odometry, '/odometry/filtered', self.odom_cb, 10)
+        
         self.pub = self.create_publisher(Pose2D, '/robot_pose', 10)
 
     def odom_cb(self, msg):

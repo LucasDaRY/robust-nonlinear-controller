@@ -19,6 +19,7 @@ def generate_launch_description():
     
     world = os.path.join(turtlebot3_gazebo, "worlds", "empty_world.world")
     smc_config = os.path.join(rnc_demo, "config", "smc_params.yaml")
+    ekf_config = os.path.join(rnc_demo, "config", "ekf.yaml")
     rviz_config_path = os.path.join(rnc_demo, "rviz", "trajectory.rviz")
 
     use_sim_time = LaunchConfiguration("use_sim_time")
@@ -66,6 +67,15 @@ def generate_launch_description():
     )
     delayed_rviz_cmd = TimerAction(period=6.0, actions=[rviz2_cmd])
 
+    # EKF
+    ekf_node = Node(
+        package='robot_localization',
+        executable='ekf_node',
+        name='ekf_filter_node',
+        output='screen',
+        parameters=[ekf_config, {'use_sim_time': use_sim_time}]
+    )
+
     # CONTROL NODES
     odom_node = Node(package="rnc_demo", executable="odom_node", output="screen")
     trajectory_node = Node(package="rnc_demo", executable="trajectory_node", output="screen")
@@ -86,6 +96,7 @@ def generate_launch_description():
             robot_state_publisher_cmd,
             delayed_spawn_cmd,
             delayed_rviz_cmd,
+            ekf_node,
             delayed_nodes_cmd,
         ]
     )
