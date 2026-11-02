@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sdf version="1.7">
+  <world name="lidar_test_world">
+
+    <!-- Physique et mise à jour standard -->
+    <physics type="ode">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+
+    <!-- Éclairage global et Sol de base -->
+    <include>
+      <uri>model://sun</uri>
+    </include>
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+
+    <!-- ========================================================== -->
+    <!-- OBSTACLES RECONNAISSABLES (Hors de la zone de 1.5m)       -->
+    <!-- Faisceau LiDAR TB3 : situé à environ ~18cm du sol         -->
+    <!-- ========================================================== -->
+
+    <!-- OBSTACLE 1 : Une grande boîte rectangulaire (Mur plan) -->
+    <!-- Positionné à X = 2.5m (Distance > 1.5m) -->
+    <model name="mur_plan_nord">
+      <static>true</static>
+      <pose>2.5 0 0.15 0 0 0</pose> <!-- Hauteur 30cm, centre à 15cm -->
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>0.2 3.0 0.3</size> <!-- Épaisseur 20cm, Longueur 3m, Hauteur 30cm -->
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.2 3.0 0.3</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.8 0.2 0.2 1</ambient>
+            <diffuse>0.8 0.2 0.2 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- OBSTACLE 2 : Un coin à angle droit (Forme en L) -->
+    <!-- Positionné dans le quadrant Sud-Ouest à X = -2.0m, Y = -2.0m -->
+    <model name="coin_angle_droit">
+      <static>true</static>
+      <pose>-2.0 -2.0 0.15 0 0 0</pose>
+      <!-- Segment 1 du L -->
+      <link name="segment_a">
+        <pose>0 0 0 0 0 0</pose>
+        <collision name="collision_a">
+          <geometry>
+            <box>
+              <size>1.5 0.15 0.3</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual_a">
+          <geometry>
+            <box>
+              <size>1.5 0.15 0.3</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.2 0.8 0.2 1</ambient>
+            <diffuse>0.2 0.8 0.2 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <!-- Segment 2 du L -->
+      <link name="segment_b">
+        <pose>0.675 0.675 0 0 0 1.5708</pose> <!-- Tourné à 90° -->
+        <collision name="collision_b">
+          <geometry>
+            <box>
+              <size>1.5 0.15 0.3</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual_b">
+          <geometry>
+            <box>
+              <size>1.5 0.15 0.3</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.2 0.8 0.2 1</ambient>
+            <diffuse>0.2 0.8 0.2 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- OBSTACLE 3 : Une colonne carrée isolée -->
+    <!-- Positionnée à X = 0m, Y = 2.2m (Zone centrale 1.5m respectée) -->
+    <model name="poteau_carre">
+      <static>true</static>
+      <pose>0 2.2 0.15 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>0.4 0.4 0.3</size> <!-- Bloc carré de 40x40cm -->
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.4 0.4 0.3</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.2 0.2 0.8 1</ambient>
+            <diffuse>0.2 0.2 0.8 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- OBSTACLE 4 : Un prisme triangulaire (Biseau) -->
+    <!-- Positionné à X = -2.0m, Y = 2.0m (Tourné à 45° pour casser les axes) -->
+    <model name="obstacle_biseau">
+      <static>true</static>
+      <pose>-2.0 2.0 0.15 0 0 0.7854</pose> <!-- Rotation 45° -->
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>1.0 0.3 0.3</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>1.0 0.3 0.3</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.8 0.8 0.2 1</ambient>
+            <diffuse>0.8 0.8 0.2 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+  </world>
+</sdf>

@@ -10,6 +10,7 @@ from launch_ros.actions import Node
 def generate_launch_description():
     turtlebot3_gazebo = get_package_share_directory("turtlebot3_gazebo")
     gazebo_ros = get_package_share_directory("gazebo_ros")
+    turtlebot3_carto = get_package_share_directory("turtlebot3_cartographer")
     rnc_demo = get_package_share_directory("rnc_demo")
 
     model = os.environ.get("TURTLEBOT3_MODEL", "burger")
@@ -17,13 +18,12 @@ def generate_launch_description():
         turtlebot3_gazebo, "models", f"turtlebot3_{model}", "model.sdf"
     )
     
-    world = os.path.join(turtlebot3_gazebo, "worlds", "empty_world.world")
+    # Use a world with walls for LiDAR SLAM
+    world = os.path.join(rnc_demo, "worlds", "custom_room.world")
     smc_config = os.path.join(rnc_demo, "config", "smc_params.yaml")
-    ekf_config = os.path.join(rnc_demo, "config", "ekf.yaml")
     rviz_config_path = os.path.join(rnc_demo, "rviz", "trajectory.rviz")
 
     use_sim_time = LaunchConfiguration("use_sim_time")
-
     set_env_gazebo = SetEnvironmentVariable("GAZEBO_MODEL_DATABASE_URI", "")
 
     # HEADLESS GAZEBO 
@@ -56,6 +56,14 @@ def generate_launch_description():
     )
     delayed_spawn_cmd = TimerAction(period=5.0, actions=[spawn_cmd])
 
+    # CARTOGRAPHER (SLAM)
+    cartographer_cmd = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(turtlebot3_carto, "launch", "cartographer.launch.py")
+        ),
+        launch_arguments={'use_sim_time': use_sim_time}.items()
+    )
+
     # RVIZ2
     rviz2_cmd = Node(
         package='rviz2',
@@ -66,15 +74,6 @@ def generate_launch_description():
         output='screen'
     )
     delayed_rviz_cmd = TimerAction(period=6.0, actions=[rviz2_cmd])
-
-    # EKF
-    ekf_node = Node(
-        package='robot_localization',
-        executable='ekf_node',
-        name='ekf_filter_node',
-        output='screen',
-        parameters=[ekf_config, {'use_sim_time': use_sim_time}]
-    )
 
     # CONTROL NODES
     odom_node = Node(package="rnc_demo", executable="odom_node", output="screen")
@@ -95,8 +94,8 @@ def generate_launch_description():
             gzserver_cmd,
             robot_state_publisher_cmd,
             delayed_spawn_cmd,
+            cartographer_cmd,
             delayed_rviz_cmd,
-            ekf_node,
             delayed_nodes_cmd,
         ]
     )
