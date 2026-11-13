@@ -48,9 +48,10 @@ class SMCNode(Node):
         self.csv_file.write("x_des,y_des,x_real,y_real\n")
 
     def pose_cb(self, msg):
-        self.h[0, 0] = msg.x
-        self.h[1, 0] = msg.y
+        a = self.get_parameter('a').value
         self.psi = msg.theta
+        self.h[0, 0] = msg.x + a * np.cos(self.psi)
+        self.h[1, 0] = msg.y + a * np.sin(self.psi)
 
     def traj_cb(self, msg):
         self.hd[0, 0] = msg.data[0]

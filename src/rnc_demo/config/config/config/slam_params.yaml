@@ -1,0 +1,19 @@
+slam_toolbox:
+  ros__parameters:
+    odom_frame: odom
+    map_frame: map
+    base_frame: base_footprint
+    scan_topic: /scan
+    mode: mapping
+
+    # Plage exacte du LiDAR TurtleBot3 (supprime les 2 warnings)
+    min_laser_range: 0.12
+    max_laser_range: 3.5
+
+    # Mise à jour fluide sans surcharger le graphe de poses
+    transform_publish_period: 0.02
+    minimum_travel_distance: 0.05
+    minimum_travel_heading: 0.05
+
+    # Pas de saut de fermeture de boucle pendant le suivi
+    do_loop_closing: false
