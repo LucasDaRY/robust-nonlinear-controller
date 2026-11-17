@@ -5,21 +5,19 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 from launch.actions import IncludeLaunchDescription, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch_ros.actions import Node
 
 def generate_launch_description():
     rnc_demo = get_package_share_directory("rnc_demo")
     turtlebot3_carto = get_package_share_directory("turtlebot3_cartographer")
 
     smc_config = os.path.join(rnc_demo, "config", "smc_params.yaml")
-    slam_config = os.path.join(rnc_demo, "config", "slam_params.yaml")
     rviz_config_path = os.path.join(rnc_demo, "rviz", "trajectory.rviz")
 
     # CARTOGRAPHER — use_sim_time MUST be false on the real robot
     # use_rviz=false because we launch our own RViz with a custom config below
     cartographer_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(slam_toolbox, "launch", "online_async_launch.py")
+            os.path.join(turtlebot3_carto, "launch", "cartographer.launch.py")
         ),
         launch_arguments={
             'use_sim_time': 'false',

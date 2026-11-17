@@ -10,7 +10,7 @@ from launch_ros.actions import Node
 def generate_launch_description():
     turtlebot3_gazebo = get_package_share_directory("turtlebot3_gazebo")
     gazebo_ros = get_package_share_directory("gazebo_ros")
-    slam_toolbox = get_package_share_directory("slam_toolbox")
+    turtlebot3_carto = get_package_share_directory("turtlebot3_cartographer")
     rnc_demo = get_package_share_directory("rnc_demo")
 
     model = os.environ.get("TURTLEBOT3_MODEL", "burger")
@@ -20,7 +20,6 @@ def generate_launch_description():
 
     world = os.path.join(rnc_demo, "worlds", "custom_room.world")
     smc_config = os.path.join(rnc_demo, "config", "smc_params.yaml")
-    slam_config = os.path.join(rnc_demo, "config", "slam_params.yaml")
 
     use_sim_time = LaunchConfiguration("use_sim_time")
     x_pose = LaunchConfiguration("x_pose")
@@ -71,12 +70,12 @@ def generate_launch_description():
         period=5.0,
         actions=[spawn_cmd]
     )
-    
+
     # CARTOGRAPHER (SLAM)
     # use_rviz=false: we do not need Cartographer's default RViz in simulation
     cartographer_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(slam_toolbox, "launch", "online_async_launch.py")
+            os.path.join(turtlebot3_carto, "launch", "cartographer.launch.py")
         ),
         launch_arguments={
             'use_sim_time': use_sim_time,
@@ -115,7 +114,7 @@ def generate_launch_description():
             gzclient_cmd,
             robot_state_publisher_cmd,
             delayed_spawn_cmd,
-            slam_cmd,
+            cartographer_cmd,
             delayed_nodes_cmd,
         ]
     )

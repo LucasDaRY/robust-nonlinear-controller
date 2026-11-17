@@ -12,6 +12,7 @@ class OdomNode(Node):
     def __init__(self):
         super().__init__('odom_node')
         
+        # The publisher remains identical; the SMC node is unaware of the backend change
         self.pub = self.create_publisher(Pose2D, '/robot_pose', 10)
 
         # Publish the actual robot path for RViz overlay
@@ -22,8 +23,6 @@ class OdomNode(Node):
         # Tools to listen to the Transform Tree (TF2)
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
-        
-        self.initial_pose = None
         
         # Query the TF tree at 30 Hz to ensure a smooth signal for the SMC
         self.timer = self.create_timer(1.0 / 30.0, self.timer_cb)
@@ -38,28 +37,18 @@ class OdomNode(Node):
                 'base_footprint',
                 rclpy.time.Time())
             
-            x_map = t.transform.translation.x
-            y_map = t.transform.translation.y
+            # Publish absolute pose in the map frame.
+            # The desired trajectory (trajectory_node) is also expressed in the map frame,
+            # so both signals share the same coordinate system → the SMC error is correct.
+            pose = Pose2D()
+            pose.x = t.transform.translation.x
+            pose.y = t.transform.translation.y
             
             # Convert quaternion to Yaw angle
             q = t.transform.rotation
             siny_cosp = 2.0 * (q.w * q.z + q.x * q.y)
             cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
-            theta_map = math.atan2(siny_cosp, cosy_cosp)
-
-            # Tare initial pose so the controller always starts at (0, 0, 0)
-            if self.initial_pose is None:
-                self.initial_pose = (x_map, y_map, theta_map)
-                return
-
-            dx = x_map - self.initial_pose[0]
-            dy = y_map - self.initial_pose[1]
-            theta0 = self.initial_pose[2]
-
-            pose = Pose2D()
-            pose.x = dx * math.cos(theta0) + dy * math.sin(theta0)
-            pose.y = -dx * math.sin(theta0) + dy * math.cos(theta0)
-            pose.theta = (theta_map - theta0 + math.pi) % (2.0 * math.pi) - math.pi
+            pose.theta = math.atan2(siny_cosp, cosy_cosp)
             
             self.pub.publish(pose)
 
