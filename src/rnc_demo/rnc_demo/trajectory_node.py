@@ -55,7 +55,7 @@ class TrajectoryNode(Node):
 
     def publish_path(self):
         path_msg = Path()
-        path_msg.header.frame_id = "odom"
+        path_msg.header.frame_id = "map"
         path_msg.header.stamp = self.get_clock().now().to_msg()
         
         for i in range(1000):
@@ -65,7 +65,7 @@ class TrajectoryNode(Node):
                 break
 
             pose = PoseStamped()
-            pose.header.frame_id = "odom"
+            pose.header.frame_id = "map"
             pose.header.stamp = path_msg.header.stamp
             pose.pose.position.x = self.get_x(t_sim)
             pose.pose.position.y = self.get_y(t_sim)

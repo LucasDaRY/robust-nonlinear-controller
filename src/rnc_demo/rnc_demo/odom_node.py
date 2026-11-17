@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import Pose2D
+from geometry_msgs.msg import Pose2D, PoseStamped
+from nav_msgs.msg import Path
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
@@ -12,6 +13,11 @@ class OdomNode(Node):
         super().__init__('odom_node')
         
         self.pub = self.create_publisher(Pose2D, '/robot_pose', 10)
+
+        # Publish the actual robot path for RViz overlay
+        self.pub_actual_path = self.create_publisher(Path, '/actual_path', 10)
+        self._actual_path_msg = Path()
+        self._actual_path_msg.header.frame_id = 'map'
         
         # Tools to listen to the Transform Tree (TF2)
         self.tf_buffer = Buffer()
@@ -24,7 +30,9 @@ class OdomNode(Node):
 
     def timer_cb(self):
         try:
-            # Lookup 'map' -> 'base_footprint' to include LiDAR corrections
+            # Lookup the transform published by Cartographer: map → base_footprint
+            # (Cartographer publishes map → odom; TF2 resolves the full chain
+            # map → odom → base_footprint automatically via lookup_transform)
             t = self.tf_buffer.lookup_transform(
                 'map',
                 'base_footprint',
@@ -54,6 +62,18 @@ class OdomNode(Node):
             pose.theta = (theta_map - theta0 + math.pi) % (2.0 * math.pi) - math.pi
             
             self.pub.publish(pose)
+
+            # Accumulate actual path for RViz
+            stamped = PoseStamped()
+            stamped.header.frame_id = 'map'
+            stamped.header.stamp = self.get_clock().now().to_msg()
+            stamped.pose.position.x = t.transform.translation.x
+            stamped.pose.position.y = t.transform.translation.y
+            stamped.pose.position.z = 0.0
+            stamped.pose.orientation = t.transform.rotation
+            self._actual_path_msg.poses.append(stamped)
+            self._actual_path_msg.header.stamp = stamped.header.stamp
+            self.pub_actual_path.publish(self._actual_path_msg)
             
         except TransformException:
             # Expected behavior during the first few seconds before SLAM is ready

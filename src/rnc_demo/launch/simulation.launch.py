@@ -66,36 +66,36 @@ def generate_launch_description():
         ],
         output="screen",
     )
-    delayed_spawn_cmd = TimerAction(period=5.0, actions=[spawn_cmd])
 
-    # SLAM TOOLBOX (LiDAR + Odometry)
-    slam_cmd = IncludeLaunchDescription(
+    delayed_spawn_cmd = TimerAction(
+        period=5.0,
+        actions=[spawn_cmd]
+    )
+    
+    # CARTOGRAPHER (SLAM)
+    # use_rviz=false: we do not need Cartographer's default RViz in simulation
+    cartographer_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(slam_toolbox, "launch", "online_async_launch.py")
         ),
         launch_arguments={
-            "slam_params_file": slam_config,
-            "use_sim_time": use_sim_time,
-        }.items(),
+            'use_sim_time': use_sim_time,
+            'use_rviz': 'false',
+        }.items()
     )
 
     odom_node = Node(
-        package="rnc_demo",
-        executable="odom_node",
-        parameters=[{"use_sim_time": use_sim_time}],
-        output="screen",
+        package="rnc_demo", executable="odom_node", output="screen",
+        parameters=[{'use_sim_time': use_sim_time}]
     )
     trajectory_node = Node(
-        package="rnc_demo",
-        executable="trajectory_node",
-        parameters=[{"use_sim_time": use_sim_time}],
-        output="screen",
+        package="rnc_demo", executable="trajectory_node", output="screen",
+        parameters=[{'use_sim_time': use_sim_time}]
     )
     smc_node = Node(
-        package="rnc_demo",
-        executable="smc_node",
-        parameters=[smc_config, {"use_sim_time": use_sim_time}],
-        output="screen",
+        package="rnc_demo", executable="smc_node",
+        parameters=[smc_config, {'use_sim_time': use_sim_time}],
+        output="screen"
     )
 
     delayed_nodes_cmd = TimerAction(
