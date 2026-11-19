@@ -25,6 +25,7 @@ setup(
         ("share/" + package_name + "/config", ["config/ekf.yaml"]),
         ("share/" + package_name + "/config", ["config/smc_params.yaml"]),
         ("share/" + package_name + "/config", ["config/slam_params.yaml"]),
+        ("share/" + package_name + "/config", ["config/smc_params.yaml"]),
         ("share/" + package_name + "/rviz", ["rviz/trajectory.rviz"]),
     ],
     install_requires=["setuptools"],
@@ -40,6 +41,7 @@ setup(
             "odom_node = rnc_demo.odom_node:main",
             "trajectory_node = rnc_demo.trajectory_node:main",
             "smc_node = rnc_demo.smc_node:main",
+            "scan_relay = rnc_demo.scan_relay:main",
         ],
     },
 )
