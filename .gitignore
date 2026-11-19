@@ -232,3 +232,6 @@ __marimo__/
 # Generated data
 trajectory_data.csv
 trajectory_result.png
+
+.example
+.env
