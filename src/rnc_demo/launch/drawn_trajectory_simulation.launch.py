@@ -57,7 +57,16 @@ def generate_launch_description():
     )
     delayed_spawn_cmd = TimerAction(period=5.0, actions=[spawn_cmd])
 
-    # ONLINE SLAM (publie map -> odom à 50 Hz, sans carte préalable)
+    # Pont QoS : /scan -> /scan_reliable
+    scan_relay_node = Node(
+        package="rnc_demo",
+        executable="scan_relay",
+        name="scan_relay_node",
+        output="screen",
+        parameters=[{"use_sim_time": use_sim_time}],
+    )
+
+    # ONLINE SLAM
     slam_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(slam_toolbox_dir, "launch", "online_async_launch.py")
@@ -75,6 +84,7 @@ def generate_launch_description():
         name="rviz2",
         arguments=["-d", rviz_config_path],
         parameters=[{"use_sim_time": use_sim_time}],
+        remappings=[("/scan", "/scan_reliable")],
         output="screen",
     )
     delayed_rviz_cmd = TimerAction(period=6.0, actions=[rviz2_cmd])
@@ -111,6 +121,7 @@ def generate_launch_description():
         gzserver_cmd,
         robot_state_publisher_cmd,
         delayed_spawn_cmd,
+        scan_relay_node,
         slam_cmd,
         delayed_rviz_cmd,
         delayed_nodes_cmd,

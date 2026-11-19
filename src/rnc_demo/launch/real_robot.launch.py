@@ -2,9 +2,9 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import GroupAction, IncludeLaunchDescription, TimerAction
+from launch.actions import IncludeLaunchDescription, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch_ros.actions import Node, SetRemap
+from launch_ros.actions import Node
 
 
 def generate_launch_description():
@@ -24,27 +24,25 @@ def generate_launch_description():
         parameters=[{"use_sim_time": False}],
     )
 
-    # ONLINE SLAM (publie map -> odom à 50 Hz, sans carte préalable)
-    slam_cmd = GroupAction([
-        SetRemap(src="/scan", dst="/scan_reliable"),
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                os.path.join(slam_toolbox_dir, "launch", "online_async_launch.py")
-            ),
-            launch_arguments={
-                "slam_params_file": slam_config,
-                "use_sim_time": "false",
-            }.items(),
+    # ONLINE SLAM (lit /scan_reliable, publie map -> odom sans carte préalable)
+    slam_cmd = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(slam_toolbox_dir, "launch", "online_async_launch.py")
         ),
-    ])
+        launch_arguments={
+            "slam_params_file": slam_config,
+            "use_sim_time": "false",
+        }.items(),
+    )
 
-    # RVIZ2
+    # RVIZ2 (remappé sur /scan_reliable pour éviter l'incompatibilité QoS sur /scan)
     rviz2_cmd = Node(
         package="rviz2",
         executable="rviz2",
         name="rviz2",
         arguments=["-d", rviz_config_path],
         parameters=[{"use_sim_time": False}],
+        remappings=[("/scan", "/scan_reliable")],
         output="screen",
     )
 
