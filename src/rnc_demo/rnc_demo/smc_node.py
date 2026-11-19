@@ -43,7 +43,7 @@ class SMCNode(Node):
         self.timer = self.create_timer(0.05, self.control_loop) # 20 Hz control loop
 
         # CSV parameters (to save desired and real trajectory)
-        self.csv_path = os.path.expanduser('~/robust_nonlinear_controller/trajectory_data.csv')
+        self.csv_path = os.path.expanduser('trajectory_data.csv')
         self.csv_file = open(self.csv_path, 'w')
         self.csv_file.write("x_des,y_des,x_real,y_real\n")
 
