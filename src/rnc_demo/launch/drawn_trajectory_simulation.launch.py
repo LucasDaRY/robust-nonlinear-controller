@@ -7,10 +7,11 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
+
 def generate_launch_description():
     turtlebot3_gazebo = get_package_share_directory("turtlebot3_gazebo")
     gazebo_ros = get_package_share_directory("gazebo_ros")
-    turtlebot3_carto = get_package_share_directory("turtlebot3_cartographer")
+    slam_toolbox_dir = get_package_share_directory("slam_toolbox")
     rnc_demo = get_package_share_directory("rnc_demo")
 
     model = os.environ.get("TURTLEBOT3_MODEL", "burger")
@@ -20,6 +21,7 @@ def generate_launch_description():
 
     world = os.path.join(rnc_demo, "worlds", "custom_room.world")
     smc_config = os.path.join(rnc_demo, "config", "smc_params.yaml")
+    slam_config = os.path.join(rnc_demo, "config", "slam_params.yaml")
     rviz_config_path = os.path.join(rnc_demo, "rviz", "trajectory.rviz")
 
     use_sim_time = LaunchConfiguration("use_sim_time")
@@ -55,16 +57,15 @@ def generate_launch_description():
     )
     delayed_spawn_cmd = TimerAction(period=5.0, actions=[spawn_cmd])
 
-    # CARTOGRAPHER (SLAM)
-    # use_rviz=false: we launch our own RViz with custom config below
-    cartographer_cmd = IncludeLaunchDescription(
+    # ONLINE SLAM (publie map -> odom à 50 Hz, sans carte préalable)
+    slam_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(turtlebot3_carto, "launch", "cartographer.launch.py")
+            os.path.join(slam_toolbox_dir, "launch", "online_async_launch.py")
         ),
         launch_arguments={
-            'use_sim_time': use_sim_time,
-            'use_rviz': 'false',
-        }.items()
+            "slam_params_file": slam_config,
+            "use_sim_time": use_sim_time,
+        }.items(),
     )
 
     # RVIZ2
@@ -80,17 +81,22 @@ def generate_launch_description():
 
     # CONTROL NODES
     odom_node = Node(
-        package="rnc_demo", executable="odom_node", output="screen",
-        parameters=[{'use_sim_time': use_sim_time}]
+        package="rnc_demo",
+        executable="odom_node",
+        output="screen",
+        parameters=[{"use_sim_time": use_sim_time}],
     )
     trajectory_node = Node(
-        package="rnc_demo", executable="trajectory_node", output="screen",
-        parameters=[{'use_sim_time': use_sim_time}]
+        package="rnc_demo",
+        executable="trajectory_node",
+        output="screen",
+        parameters=[{"use_sim_time": use_sim_time}],
     )
     smc_node = Node(
-        package="rnc_demo", executable="smc_node",
-        parameters=[smc_config, {'use_sim_time': use_sim_time}],
-        output="screen"
+        package="rnc_demo",
+        executable="smc_node",
+        parameters=[smc_config, {"use_sim_time": use_sim_time}],
+        output="screen",
     )
 
     delayed_nodes_cmd = TimerAction(
@@ -98,16 +104,14 @@ def generate_launch_description():
         actions=[odom_node, trajectory_node, smc_node],
     )
 
-    return LaunchDescription(
-        [
-            set_env_gazebo,
-            DeclareLaunchArgument("use_sim_time", default_value="true"),
-            DeclareLaunchArgument("yaw_pose", default_value="0.0"),
-            gzserver_cmd,
-            robot_state_publisher_cmd,
-            delayed_spawn_cmd,
-            cartographer_cmd,
-            delayed_rviz_cmd,
-            delayed_nodes_cmd,
-        ]
-    )
+    return LaunchDescription([
+        set_env_gazebo,
+        DeclareLaunchArgument("use_sim_time", default_value="true"),
+        DeclareLaunchArgument("yaw_pose", default_value="0.0"),
+        gzserver_cmd,
+        robot_state_publisher_cmd,
+        delayed_spawn_cmd,
+        slam_cmd,
+        delayed_rviz_cmd,
+        delayed_nodes_cmd,
+    ])
