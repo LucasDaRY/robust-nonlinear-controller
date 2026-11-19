@@ -233,5 +233,5 @@ __marimo__/
 trajectory_data.csv
 trajectory_result.png
 
-.example
-.env
+robot.env.example
+workspace.env
