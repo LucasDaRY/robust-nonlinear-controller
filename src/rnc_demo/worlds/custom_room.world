@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <sdf version="1.7">
-  <world name="lidar_test_world">
+  <world name="asymmetric_room">
 
-    <!-- Physique et mise à jour standard -->
     <physics type="ode">
       <max_step_size>0.001</max_step_size>
       <real_time_factor>1.0</real_time_factor>
     </physics>
 
-    <!-- Éclairage global et Sol de base -->
     <include>
       <uri>model://sun</uri>
     </include>
@@ -16,139 +14,171 @@
       <uri>model://ground_plane</uri>
     </include>
 
-    <!-- ========================================================== -->
-    <!-- OBSTACLES RECONNAISSABLES (Hors de la zone de 1.5m)       -->
-    <!-- Faisceau LiDAR TB3 : situé à environ ~18cm du sol         -->
-    <!-- ========================================================== -->
+    <!--
+      Closed room with no parallel-wall symmetry.
+      The figure-8 stays inside x [-0.5, 0.5], y [-1.2, -0.2], spawn at the origin.
+      Walls and posts sit outside x [-0.95, 0.95], y [-1.6, 0.4].
+      The Burger lidar is a full 360 deg scan with max range 3.5 m, so every pose
+      in that area sees a different range image: a jog on the north-west, a step
+      on the east, and three posts of different shapes.
+      Wall height is 0.8 m. The LDS beam is near 0.18 m.
+    -->
 
-    <!-- OBSTACLE 1 : Une grande boîte rectangulaire (Mur plan) -->
-    <!-- Positionné à X = 2.5m (Distance > 1.5m) -->
-    <model name="mur_plan_nord">
+    <model name="wall_south">
       <static>true</static>
-      <pose>2.5 0 0.15 0 0 0</pose> <!-- Hauteur 30cm, centre à 15cm -->
+      <pose>-0.05 -2.30 0.40 0 0 0</pose>
       <link name="link">
-        <collision name="collision">
-          <geometry>
-            <box>
-              <size>0.2 3.0 0.3</size> <!-- Épaisseur 20cm, Longueur 3m, Hauteur 30cm -->
-            </box>
-          </geometry>
-        </collision>
+        <collision name="collision"><geometry><box><size>4.70 0.12 0.80</size></box></geometry></collision>
         <visual name="visual">
-          <geometry>
-            <box>
-              <size>0.2 3.0 0.3</size>
-            </box>
-          </geometry>
-          <material>
-            <ambient>0.8 0.2 0.2 1</ambient>
-            <diffuse>0.8 0.2 0.2 1</diffuse>
-          </material>
+          <geometry><box><size>4.70 0.12 0.80</size></box></geometry>
+          <material><ambient>0.55 0.55 0.58 1</ambient><diffuse>0.55 0.55 0.58 1</diffuse></material>
         </visual>
       </link>
     </model>
 
-    <!-- OBSTACLE 2 : Un coin à angle droit (Forme en L) -->
-    <!-- Positionné dans le quadrant Sud-Ouest à X = -2.0m, Y = -2.0m -->
-    <model name="coin_angle_droit">
+    <model name="wall_east_lower">
       <static>true</static>
-      <pose>-2.0 -2.0 0.15 0 0 0</pose>
-      <!-- Segment 1 du L -->
-      <link name="segment_a">
-        <pose>0 0 0 0 0 0</pose>
-        <collision name="collision_a">
-          <geometry>
-            <box>
-              <size>1.5 0.15 0.3</size>
-            </box>
-          </geometry>
-        </collision>
-        <visual name="visual_a">
-          <geometry>
-            <box>
-              <size>1.5 0.15 0.3</size>
-            </box>
-          </geometry>
-          <material>
-            <ambient>0.2 0.8 0.2 1</ambient>
-            <diffuse>0.2 0.8 0.2 1</diffuse>
-          </material>
-        </visual>
-      </link>
-      <!-- Segment 2 du L -->
-      <link name="segment_b">
-        <pose>0.675 0.675 0 0 0 1.5708</pose> <!-- Tourné à 90° -->
-        <collision name="collision_b">
-          <geometry>
-            <box>
-              <size>1.5 0.15 0.3</size>
-            </box>
-          </geometry>
-        </collision>
-        <visual name="visual_b">
-          <geometry>
-            <box>
-              <size>1.5 0.15 0.3</size>
-            </box>
-          </geometry>
-          <material>
-            <ambient>0.2 0.8 0.2 1</ambient>
-            <diffuse>0.2 0.8 0.2 1</diffuse>
-          </material>
+      <pose>2.30 -1.40 0.40 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><geometry><box><size>0.12 1.80 0.80</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.12 1.80 0.80</size></box></geometry>
+          <material><ambient>0.55 0.55 0.58 1</ambient><diffuse>0.55 0.55 0.58 1</diffuse></material>
         </visual>
       </link>
     </model>
 
-    <!-- OBSTACLE 3 : Une colonne carrée isolée -->
-    <!-- Positionnée à X = 0m, Y = 2.2m (Zone centrale 1.5m respectée) -->
-    <model name="poteau_carre">
+    <model name="wall_east_step">
       <static>true</static>
-      <pose>0 2.2 0.15 0 0 0</pose>
+      <pose>1.90 -0.50 0.40 0 0 0</pose>
       <link name="link">
-        <collision name="collision">
-          <geometry>
-            <box>
-              <size>0.4 0.4 0.3</size> <!-- Bloc carré de 40x40cm -->
-            </box>
-          </geometry>
-        </collision>
+        <collision name="collision"><geometry><box><size>0.80 0.12 0.80</size></box></geometry></collision>
         <visual name="visual">
-          <geometry>
-            <box>
-              <size>0.4 0.4 0.3</size>
-            </box>
-          </geometry>
-          <material>
-            <ambient>0.2 0.2 0.8 1</ambient>
-            <diffuse>0.2 0.2 0.8 1</diffuse>
-          </material>
+          <geometry><box><size>0.80 0.12 0.80</size></box></geometry>
+          <material><ambient>0.55 0.55 0.58 1</ambient><diffuse>0.55 0.55 0.58 1</diffuse></material>
         </visual>
       </link>
     </model>
 
-    <!-- OBSTACLE 4 : Un prisme triangulaire (Biseau) -->
-    <!-- Positionné à X = -2.0m, Y = 2.0m (Tourné à 45° pour casser les axes) -->
-    <model name="obstacle_biseau">
+    <model name="wall_east_upper">
       <static>true</static>
-      <pose>-2.0 2.0 0.15 0 0 0.7854</pose> <!-- Rotation 45° -->
+      <pose>1.50 0.70 0.40 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><geometry><box><size>0.12 2.40 0.80</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.12 2.40 0.80</size></box></geometry>
+          <material><ambient>0.55 0.55 0.58 1</ambient><diffuse>0.55 0.55 0.58 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="wall_north">
+      <static>true</static>
+      <pose>0.15 1.90 0.40 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><geometry><box><size>2.70 0.12 0.80</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>2.70 0.12 0.80</size></box></geometry>
+          <material><ambient>0.55 0.55 0.58 1</ambient><diffuse>0.55 0.55 0.58 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="wall_north_jog">
+      <static>true</static>
+      <pose>-1.20 1.55 0.40 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><geometry><box><size>0.12 0.70 0.80</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.12 0.70 0.80</size></box></geometry>
+          <material><ambient>0.55 0.55 0.58 1</ambient><diffuse>0.55 0.55 0.58 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="wall_north_west">
+      <static>true</static>
+      <pose>-1.80 1.20 0.40 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><geometry><box><size>1.20 0.12 0.80</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>1.20 0.12 0.80</size></box></geometry>
+          <material><ambient>0.55 0.55 0.58 1</ambient><diffuse>0.55 0.55 0.58 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="wall_west">
+      <static>true</static>
+      <pose>-2.40 -0.55 0.40 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><geometry><box><size>0.12 3.50 0.80</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.12 3.50 0.80</size></box></geometry>
+          <material><ambient>0.55 0.55 0.58 1</ambient><diffuse>0.55 0.55 0.58 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Breaks the long north face, so sliding along that wall changes the scan. -->
+    <model name="buttress_north">
+      <static>true</static>
+      <pose>-0.30 1.55 0.40 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><geometry><box><size>0.22 0.70 0.80</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.22 0.70 0.80</size></box></geometry>
+          <material><ambient>0.75 0.45 0.20 1</ambient><diffuse>0.75 0.45 0.20 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="post_cylinder">
+      <static>true</static>
+      <pose>1.05 1.35 0.40 0 0 0</pose>
       <link name="link">
         <collision name="collision">
-          <geometry>
-            <box>
-              <size>1.0 0.3 0.3</size>
-            </box>
-          </geometry>
+          <geometry><cylinder><radius>0.18</radius><length>0.80</length></cylinder></geometry>
         </collision>
         <visual name="visual">
-          <geometry>
-            <box>
-              <size>1.0 0.3 0.3</size>
-            </box>
-          </geometry>
-          <material>
-            <ambient>0.8 0.8 0.2 1</ambient>
-            <diffuse>0.8 0.8 0.2 1</diffuse>
-          </material>
+          <geometry><cylinder><radius>0.18</radius><length>0.80</length></cylinder></geometry>
+          <material><ambient>0.20 0.25 0.80 1</ambient><diffuse>0.20 0.25 0.80 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="post_square">
+      <static>true</static>
+      <pose>-1.70 -1.20 0.40 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><geometry><box><size>0.36 0.36 0.80</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.36 0.36 0.80</size></box></geometry>
+          <material><ambient>0.15 0.65 0.25 1</ambient><diffuse>0.15 0.65 0.25 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="post_slab">
+      <static>true</static>
+      <pose>1.15 -1.95 0.40 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><geometry><box><size>0.55 0.18 0.80</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.55 0.18 0.80</size></box></geometry>
+          <material><ambient>0.75 0.20 0.20 1</ambient><diffuse>0.75 0.20 0.20 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="post_fin">
+      <static>true</static>
+      <pose>-1.75 0.70 0.40 0 0 0.9</pose>
+      <link name="link">
+        <collision name="collision"><geometry><box><size>0.18 0.55 0.80</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.18 0.55 0.80</size></box></geometry>
+          <material><ambient>0.85 0.80 0.20 1</ambient><diffuse>0.85 0.80 0.20 1</diffuse></material>
         </visual>
       </link>
     </model>
