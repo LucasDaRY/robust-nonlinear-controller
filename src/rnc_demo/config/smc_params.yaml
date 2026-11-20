@@ -1,11 +1,11 @@
 smc_node:
   ros__parameters:
-    lambda_p: 1.0
-    lambda_i: 0.4
+    lambda_p: 1.2
+    lambda_i: 0.5
     lambda_d: 0.0
-    k: 0.015
-    a: 0.15
-    epsilon: 0.12
-    v_max: 0.15
-    w_max: 0.5
-    filter_alpha: 0.35
+    k: 0.03
+    a: 0.12
+    epsilon: 0.08
+    v_max: 0.18
+    w_max: 0.6
+    filter_alpha: 0.25

@@ -14,15 +14,15 @@ class SMCNode(Node):
         super().__init__('smc_node')
 
         # Paramètres configurables via YAML
-        self.declare_parameter('lambda_p', 1.0)
-        self.declare_parameter('lambda_i', 0.4)
+        self.declare_parameter('lambda_p', 1.2)
+        self.declare_parameter('lambda_i', 0.5)
         self.declare_parameter('lambda_d', 0.0)
-        self.declare_parameter('k', 0.015)
-        self.declare_parameter('a', 0.15)
-        self.declare_parameter('epsilon', 0.12)
-        self.declare_parameter('v_max', 0.15)
-        self.declare_parameter('w_max', 0.5)
-        self.declare_parameter('filter_alpha', 0.35)
+        self.declare_parameter('k', 0.03)
+        self.declare_parameter('a', 0.12)
+        self.declare_parameter('epsilon', 0.08)
+        self.declare_parameter('v_max', 0.18)
+        self.declare_parameter('w_max', 0.6)
+        self.declare_parameter('filter_alpha', 0.25)
 
         # Souscriptions et publications
         self.sub_odom = self.create_subscription(
@@ -151,7 +151,7 @@ class SMCNode(Node):
 
         err_dot = (err - self.err_prev) / dt
         err_ddot = (err_dot - self.err_dot_prev) / dt
-        self.err_int += err * dt
+        self.err_int = np.clip(self.err_int + err * dt, -0.4, 0.4)
 
         s = lambda_p * err + lambda_i * self.err_int + lambda_d * err_dot
 
