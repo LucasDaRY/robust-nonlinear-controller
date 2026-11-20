@@ -14,7 +14,6 @@ setup(
         (
             "share/" + package_name + "/launch",
             [
-                "launch/talker_listener.launch.py",
                 "launch/simulation.launch.py",
                 "launch/drawn_trajectory_simulation.launch.py",
                 "launch/real_robot.launch.py",
@@ -23,8 +22,6 @@ setup(
         ("share/" + package_name + "/worlds", ["worlds/custom_room.world"]),
         ("share/" + package_name + "/worlds", ["worlds/empty_world.world"]),
         ("share/" + package_name + "/config", ["config/ekf.yaml"]),
-        ("share/" + package_name + "/config", ["config/smc_params.yaml"]),
-        ("share/" + package_name + "/config", ["config/slam_params.yaml"]),
         ("share/" + package_name + "/config", ["config/smc_params.yaml"]),
         ("share/" + package_name + "/rviz", ["rviz/trajectory.rviz"]),
     ],
@@ -36,12 +33,8 @@ setup(
     license="Apache-2.0",
     entry_points={
         "console_scripts": [
-            "talker = rnc_demo.talker:main",
-            "listener = rnc_demo.listener:main",
-            "odom_node = rnc_demo.odom_node:main",
             "trajectory_node = rnc_demo.trajectory_node:main",
             "smc_node = rnc_demo.smc_node:main",
-            "scan_relay = rnc_demo.scan_relay:main",
         ],
     },
 )

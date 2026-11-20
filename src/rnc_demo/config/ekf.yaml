@@ -1,11 +1,12 @@
 ekf_filter_node:
   ros__parameters:
-    frequency: 50.0
-    sensor_timeout: 0.5
+    frequency: 30.0
+    sensor_timeout: 0.25
     two_d_mode: true
     publish_tf: true
+    print_diagnostics: false
 
-    # Absorbe le retard des scans LiDAR (5 Hz) sans saut de position
+    # Absorbe les ~100 ms de calcul de rf2o sans saut de phase
     smooth_lagged_data: true
     history_length: 1.0
 
@@ -14,47 +15,44 @@ ekf_filter_node:
     base_link_frame: base_footprint
     world_frame: map
 
-    # 1. rf2o : position (x, y) + vitesse linéaire (vx) pour lisser entre deux scans 5 Hz
+    # 1. RF2O (/odom_rf2o) : position (x, y) et cap absolu (yaw) -> zéro drift
     odom0: /odom_rf2o
     odom0_config: [true,  true,  false,
+                   false, false, true,
                    false, false, false,
-                   true,  false, false,
                    false, false, false,
                    false, false, false]
+    odom0_queue_size: 10
     odom0_differential: false
     odom0_relative: false
-    odom0_queue_size: 10
 
-    # 2. IMU : cap (yaw) et vitesse angulaire (vyaw) à haute fréquence
+    # 2. IMU (/imu) : vitesse angulaire uniquement (vyaw) -> lisse entre les scans sans conflit sur yaw
     imu0: /imu
     imu0_config: [false, false, false,
-                  false, false, true,
+                  false, false, false,
                   false, false, false,
                   false, false, true,
                   false, false, false]
-    imu0_differential: false
-    imu0_relative: true
     imu0_queue_size: 20
+    imu0_differential: false
+    imu0_relative: false
     imu0_remove_gravitational_acceleration: true
 
-    # Calibré sur la covariance effective de rf2o (1e-9) :
-    # - x, y : 2e-9 -> lisse le bruit LiDAR tout en rattrapant une translation manuelle en ~0.5 s
-    # - vx   : 5e-9 -> suit les variations de vitesse linéaire sans à-coups
-    # - vy   : 1e-10 -> rejette les oscillations latérales parasites (robot non-holonome)
+    # Q < R (1e-9) : filtre les sauts scan-à-scan de rf2o sur x, y et yaw
     process_noise_covariance: [
-      2.0e-9, 0.0,    0.0,  0.0,  0.0,  0.0,    0.0,    0.0,    0.0,  0.0,  0.0,  0.0,    0.0,  0.0,  0.0,
-      0.0,    2.0e-9, 0.0,  0.0,  0.0,  0.0,    0.0,    0.0,    0.0,  0.0,  0.0,  0.0,    0.0,  0.0,  0.0,
-      0.0,    0.0,    0.06, 0.0,  0.0,  0.0,    0.0,    0.0,    0.0,  0.0,  0.0,  0.0,    0.0,  0.0,  0.0,
-      0.0,    0.0,    0.0,  0.03, 0.0,  0.0,    0.0,    0.0,    0.0,  0.0,  0.0,  0.0,    0.0,  0.0,  0.0,
-      0.0,    0.0,    0.0,  0.0,  0.03, 0.0,    0.0,    0.0,    0.0,  0.0,  0.0,  0.0,    0.0,  0.0,  0.0,
-      0.0,    0.0,    0.0,  0.0,  0.0,  1.0e-5, 0.0,    0.0,    0.0,  0.0,  0.0,  0.0,    0.0,  0.0,  0.0,
-      0.0,    0.0,    0.0,  0.0,  0.0,  0.0,    5.0e-9, 0.0,    0.0,  0.0,  0.0,  0.0,    0.0,  0.0,  0.0,
-      0.0,    0.0,    0.0,  0.0,  0.0,  0.0,    0.0,    1.0e-10,0.0,  0.0,  0.0,  0.0,    0.0,  0.0,  0.0,
-      0.0,    0.0,    0.0,  0.0,  0.0,  0.0,    0.0,    0.0,    0.04, 0.0,  0.0,  0.0,    0.0,  0.0,  0.0,
-      0.0,    0.0,    0.0,  0.0,  0.0,  0.0,    0.0,    0.0,    0.0,  0.01, 0.0,  0.0,    0.0,  0.0,  0.0,
-      0.0,    0.0,    0.0,  0.0,  0.0,  0.0,    0.0,    0.0,    0.0,  0.0,  0.01, 0.0,    0.0,  0.0,  0.0,
-      0.0,    0.0,    0.0,  0.0,  0.0,  0.0,    0.0,    0.0,    0.0,  0.0,  0.0,  1.0e-4, 0.0,  0.0,  0.0,
-      0.0,    0.0,    0.0,  0.0,  0.0,  0.0,    0.0,    0.0,    0.0,  0.0,  0.0,  0.0,    0.01, 0.0,  0.0,
-      0.0,    0.0,    0.0,  0.0,  0.0,  0.0,    0.0,    0.0,    0.0,  0.0,  0.0,  0.0,    0.0,  0.01, 0.0,
-      0.0,    0.0,    0.0,  0.0,  0.0,  0.0,    0.0,    0.0,    0.0,  0.0,  0.0,  0.0,    0.0,  0.0,  0.015
+      5.0e-11, 0.0,     0.0,  0.0,  0.0,  0.0,     0.0,     0.0,     0.0,  0.0,  0.0,  0.0,    0.0,  0.0,  0.0,
+      0.0,     5.0e-11, 0.0,  0.0,  0.0,  0.0,     0.0,     0.0,     0.0,  0.0,  0.0,  0.0,    0.0,  0.0,  0.0,
+      0.0,     0.0,     0.06, 0.0,  0.0,  0.0,     0.0,     0.0,     0.0,  0.0,  0.0,  0.0,    0.0,  0.0,  0.0,
+      0.0,     0.0,     0.0,  0.03, 0.0,  0.0,     0.0,     0.0,     0.0,  0.0,  0.0,  0.0,    0.0,  0.0,  0.0,
+      0.0,     0.0,     0.0,  0.0,  0.03, 0.0,     0.0,     0.0,     0.0,  0.0,  0.0,  0.0,    0.0,  0.0,  0.0,
+      0.0,     0.0,     0.0,  0.0,  0.0,  1.0e-10, 0.0,     0.0,     0.0,  0.0,  0.0,  0.0,    0.0,  0.0,  0.0,
+      0.0,     0.0,     0.0,  0.0,  0.0,  0.0,     1.0e-11, 0.0,     0.0,  0.0,  0.0,  0.0,    0.0,  0.0,  0.0,
+      0.0,     0.0,     0.0,  0.0,  0.0,  0.0,     0.0,     1.0e-11, 0.0,  0.0,  0.0,  0.0,    0.0,  0.0,  0.0,
+      0.0,     0.0,     0.0,  0.0,  0.0,  0.0,     0.0,     0.0,     0.04, 0.0,  0.0,  0.0,    0.0,  0.0,  0.0,
+      0.0,     0.0,     0.0,  0.0,  0.0,  0.0,     0.0,     0.0,     0.0,  0.01, 0.0,  0.0,    0.0,  0.0,  0.0,
+      0.0,     0.0,     0.0,  0.0,  0.0,  0.0,     0.0,     0.0,     0.0,  0.0,  0.01, 0.0,    0.0,  0.0,  0.0,
+      0.0,     0.0,     0.0,  0.0,  0.0,  0.0,     0.0,     0.0,     0.0,  0.0,  0.0,  1.0e-5, 0.0,  0.0,  0.0,
+      0.0,     0.0,     0.0,  0.0,  0.0,  0.0,     0.0,     0.0,     0.0,  0.0,  0.0,  0.0,    0.01, 0.0,  0.0,
+      0.0,     0.0,     0.0,  0.0,  0.0,  0.0,     0.0,     0.0,     0.0,  0.0,  0.0,  0.0,    0.0,  0.01, 0.0,
+      0.0,     0.0,     0.0,  0.0,  0.0,  0.0,     0.0,     0.0,     0.0,  0.0,  0.0,  0.0,    0.0,  0.0,  0.015
     ]
