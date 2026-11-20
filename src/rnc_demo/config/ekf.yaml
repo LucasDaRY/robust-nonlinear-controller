@@ -1,3 +1,4 @@
+# Not loaded by any launch file. rf2o_params.yaml is the estimator config that runs.
 ekf_filter_node:
   ros__parameters:
     frequency: 50.0

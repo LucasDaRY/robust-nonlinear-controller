@@ -1,3 +1,7 @@
+# Not loaded. The simulation and real-robot launches start rf2o_laser_odometry
+# with config/rf2o_params.yaml and do not start slam_toolbox.
+# distance_variance_penalty below is a slam_toolbox scan-matcher weight.
+# It has no effect while this file is not passed to a node.
 slam_toolbox:
   ros__parameters:
     solver_plugin: solver_plugins::CeresSolver

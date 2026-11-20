@@ -2,17 +2,16 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, TimerAction
-from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.actions import TimerAction
 from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    slam_toolbox_dir = get_package_share_directory("slam_toolbox")
     rnc_demo = get_package_share_directory("rnc_demo")
 
     smc_config = os.path.join(rnc_demo, "config", "smc_params.yaml")
-    slam_config = os.path.join(rnc_demo, "config", "slam_params.yaml")
+    imu_odom_config = os.path.join(rnc_demo, "config", "imu_odom_params.yaml")
+    rf2o_config = os.path.join(rnc_demo, "config", "rf2o_params.yaml")
     rviz_config_path = os.path.join(rnc_demo, "rviz", "trajectory.rviz")
 
     # Pont QoS : /scan (Best Effort) -> /scan_reliable (Reliable)
@@ -24,15 +23,24 @@ def generate_launch_description():
         parameters=[{"use_sim_time": False}],
     )
 
-    # ONLINE SLAM (lit /scan_reliable, publie map -> odom sans carte préalable)
-    slam_cmd = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(slam_toolbox_dir, "launch", "online_async_launch.py")
-        ),
-        launch_arguments={
-            "slam_params_file": slam_config,
-            "use_sim_time": "false",
-        }.items(),
+    static_map_to_odom = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        name="map_to_odom",
+        arguments=[
+            "--x", "0", "--y", "0", "--z", "0",
+            "--qx", "0", "--qy", "0", "--qz", "0", "--qw", "1",
+            "--frame-id", "map", "--child-frame-id", "odom",
+        ],
+        parameters=[{"use_sim_time": False}],
+    )
+
+    rf2o_node = Node(
+        package="rf2o_laser_odometry",
+        executable="rf2o_laser_odometry_node",
+        name="rf2o_laser_odometry",
+        output="screen",
+        parameters=[rf2o_config, {"use_sim_time": False}],
     )
 
     # RVIZ2 (remappé sur /scan_reliable pour éviter l'incompatibilité QoS sur /scan)
@@ -51,7 +59,7 @@ def generate_launch_description():
         package="rnc_demo",
         executable="odom_node",
         output="screen",
-        parameters=[{"use_sim_time": False}],
+        parameters=[imu_odom_config, {"use_sim_time": False}],
     )
     trajectory_node = Node(
         package="rnc_demo",
@@ -73,7 +81,8 @@ def generate_launch_description():
 
     return LaunchDescription([
         scan_relay_node,
-        slam_cmd,
+        static_map_to_odom,
+        rf2o_node,
         rviz2_cmd,
         delayed_control_nodes,
     ])

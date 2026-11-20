@@ -10,7 +10,6 @@ from launch_ros.actions import Node
 def generate_launch_description():
     turtlebot3_gazebo = get_package_share_directory("turtlebot3_gazebo")
     gazebo_ros = get_package_share_directory("gazebo_ros")
-    turtlebot3_carto = get_package_share_directory("turtlebot3_cartographer")
     rnc_demo = get_package_share_directory("rnc_demo")
 
     model = os.environ.get("TURTLEBOT3_MODEL", "burger")
@@ -20,6 +19,8 @@ def generate_launch_description():
 
     world = os.path.join(rnc_demo, "worlds", "custom_room.world")
     smc_config = os.path.join(rnc_demo, "config", "smc_params.yaml")
+    imu_odom_config = os.path.join(rnc_demo, "config", "imu_odom_params.yaml")
+    rf2o_config = os.path.join(rnc_demo, "config", "rf2o_params.yaml")
 
     use_sim_time = LaunchConfiguration("use_sim_time")
     x_pose = LaunchConfiguration("x_pose")
@@ -71,21 +72,30 @@ def generate_launch_description():
         actions=[spawn_cmd]
     )
 
-    # CARTOGRAPHER (SLAM)
-    # use_rviz=false: we do not need Cartographer's default RViz in simulation
-    cartographer_cmd = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(turtlebot3_carto, "launch", "cartographer.launch.py")
-        ),
-        launch_arguments={
-            'use_sim_time': use_sim_time,
-            'use_rviz': 'false',
-        }.items()
+    static_map_to_odom = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        name="map_to_odom",
+        arguments=[
+            "--x", "0", "--y", "0", "--z", "0",
+            "--qx", "0", "--qy", "0", "--qz", "0", "--qw", "1",
+            "--frame-id", "map", "--child-frame-id", "odom",
+        ],
+        parameters=[{"use_sim_time": use_sim_time}],
     )
+
+    rf2o_node = Node(
+        package="rf2o_laser_odometry",
+        executable="rf2o_laser_odometry_node",
+        name="rf2o_laser_odometry",
+        output="screen",
+        parameters=[rf2o_config, {"use_sim_time": use_sim_time}],
+    )
+    delayed_rf2o_cmd = TimerAction(period=6.0, actions=[static_map_to_odom, rf2o_node])
 
     odom_node = Node(
         package="rnc_demo", executable="odom_node", output="screen",
-        parameters=[{'use_sim_time': use_sim_time}]
+        parameters=[imu_odom_config, {'use_sim_time': use_sim_time}]
     )
     trajectory_node = Node(
         package="rnc_demo", executable="trajectory_node", output="screen",
@@ -114,7 +124,7 @@ def generate_launch_description():
             gzclient_cmd,
             robot_state_publisher_cmd,
             delayed_spawn_cmd,
-            cartographer_cmd,
+            delayed_rf2o_cmd,
             delayed_nodes_cmd,
         ]
     )

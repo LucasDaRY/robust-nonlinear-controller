@@ -2,7 +2,7 @@
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Pose2D, Twist
-from std_msgs.msg import Float64MultiArray
+from std_msgs.msg import Bool, Float64MultiArray
 import numpy as np
 import os
 
@@ -23,7 +23,12 @@ class SMCNode(Node):
         # Subscribers and Publisher
         self.sub_pose = self.create_subscription(Pose2D, '/robot_pose', self.pose_cb, 10)
         self.sub_traj = self.create_subscription(Float64MultiArray, '/desired_trajectory', self.traj_cb, 10)
+        self.sub_disturbance = self.create_subscription(
+            Bool, '/disturbance_active', self.disturbance_cb, 10
+        )
         self.pub_cmd = self.create_publisher(Twist, '/cmd_vel', 10)
+        self.disturbance = False
+        self._hold_wheels = False
 
         # State variables
         self.h = np.zeros((2, 1))
@@ -46,6 +51,9 @@ class SMCNode(Node):
         self.csv_path = os.path.expanduser('trajectory_data.csv')
         self.csv_file = open(self.csv_path, 'w')
         self.csv_file.write("x_des,y_des,x_real,y_real\n")
+
+    def disturbance_cb(self, msg):
+        self.disturbance = msg.data
 
     def pose_cb(self, msg):
         a = self.get_parameter('a').value
@@ -80,6 +88,17 @@ class SMCNode(Node):
             twist.angular.z = 0.0
             self.pub_cmd.publish(twist)
             return
+
+        # While the pose is coming from the IMU, hold the wheels and the integral.
+        if self.disturbance:
+            self._hold_wheels = True
+            twist = Twist()
+            self.pub_cmd.publish(twist)
+            return
+        if self._hold_wheels:
+            self.err_prev = self.hd - self.h
+            self.err_dot_prev = np.zeros((2, 1))
+            self._hold_wheels = False
 
         # Dynamic retrieval of parameters declared in YAML
         lambda_p = self.get_parameter('lambda_p').value

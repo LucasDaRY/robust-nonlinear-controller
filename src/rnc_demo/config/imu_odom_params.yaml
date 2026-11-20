@@ -1,0 +1,14 @@
+# Loaded by the odom_node launch entries. Wheel /odom is the pose.
+# These thresholds arm the short IMU integration.
+odom_node:
+  ros__parameters:
+    # m/s^2 above the wheel acceleration. The figure-8 itself is about 0.02.
+    accel_threshold: 0.45
+    # rad/s above the wheel yaw rate.
+    yaw_rate_threshold: 0.4
+    # Seconds of quiet IMU after the shove before the wheels are trusted again.
+    settle_time: 0.4
+    # Hard stop so a stuck detector cannot integrate the IMU for long.
+    max_event_time: 4.0
+    debounce_time: 0.05
+    gravity: 9.81

@@ -11,7 +11,6 @@ from launch_ros.actions import Node
 def generate_launch_description():
     turtlebot3_gazebo = get_package_share_directory("turtlebot3_gazebo")
     gazebo_ros = get_package_share_directory("gazebo_ros")
-    slam_toolbox_dir = get_package_share_directory("slam_toolbox")
     rnc_demo = get_package_share_directory("rnc_demo")
 
     model = os.environ.get("TURTLEBOT3_MODEL", "burger")
@@ -21,7 +20,8 @@ def generate_launch_description():
 
     world = os.path.join(rnc_demo, "worlds", "custom_room.world")
     smc_config = os.path.join(rnc_demo, "config", "smc_params.yaml")
-    slam_config = os.path.join(rnc_demo, "config", "slam_params.yaml")
+    imu_odom_config = os.path.join(rnc_demo, "config", "imu_odom_params.yaml")
+    rf2o_config = os.path.join(rnc_demo, "config", "rf2o_params.yaml")
     rviz_config_path = os.path.join(rnc_demo, "rviz", "trajectory.rviz")
 
     use_sim_time = LaunchConfiguration("use_sim_time")
@@ -66,16 +66,29 @@ def generate_launch_description():
         parameters=[{"use_sim_time": use_sim_time}],
     )
 
-    # ONLINE SLAM
-    slam_cmd = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(slam_toolbox_dir, "launch", "online_async_launch.py")
-        ),
-        launch_arguments={
-            "slam_params_file": slam_config,
-            "use_sim_time": use_sim_time,
-        }.items(),
+    # Identity map -> odom so RViz (fixed frame map) and the desired path
+    # share a frame with rf2o, which publishes poses in odom.
+    static_map_to_odom = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        name="map_to_odom",
+        arguments=[
+            "--x", "0", "--y", "0", "--z", "0",
+            "--qx", "0", "--qy", "0", "--qz", "0", "--qw", "1",
+            "--frame-id", "map", "--child-frame-id", "odom",
+        ],
+        parameters=[{"use_sim_time": use_sim_time}],
     )
+
+    # LIDAR ODOMETRY. Node name matches rf2o_params.yaml.
+    rf2o_node = Node(
+        package="rf2o_laser_odometry",
+        executable="rf2o_laser_odometry_node",
+        name="rf2o_laser_odometry",
+        output="screen",
+        parameters=[rf2o_config, {"use_sim_time": use_sim_time}],
+    )
+    delayed_rf2o_cmd = TimerAction(period=6.0, actions=[static_map_to_odom, rf2o_node])
 
     # RVIZ2
     rviz2_cmd = Node(
@@ -94,7 +107,7 @@ def generate_launch_description():
         package="rnc_demo",
         executable="odom_node",
         output="screen",
-        parameters=[{"use_sim_time": use_sim_time}],
+        parameters=[imu_odom_config, {"use_sim_time": use_sim_time}],
     )
     trajectory_node = Node(
         package="rnc_demo",
@@ -122,7 +135,7 @@ def generate_launch_description():
         robot_state_publisher_cmd,
         delayed_spawn_cmd,
         scan_relay_node,
-        slam_cmd,
+        delayed_rf2o_cmd,
         delayed_rviz_cmd,
         delayed_nodes_cmd,
     ])

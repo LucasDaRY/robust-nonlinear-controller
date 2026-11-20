@@ -24,6 +24,8 @@ setup(
         ("share/" + package_name + "/worlds", ["worlds/empty_world.world"]),
         ("share/" + package_name + "/config", ["config/ekf.yaml"]),
         ("share/" + package_name + "/config", ["config/smc_params.yaml"]),
+        ("share/" + package_name + "/config", ["config/rf2o_params.yaml"]),
+        ("share/" + package_name + "/config", ["config/imu_odom_params.yaml"]),
         ("share/" + package_name + "/config", ["config/slam_params.yaml"]),
         ("share/" + package_name + "/config", ["config/smc_params.yaml"]),
         ("share/" + package_name + "/rviz", ["rviz/trajectory.rviz"]),
